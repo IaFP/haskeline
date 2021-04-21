@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators, UndecidableSuperClasses #-}
+#endif
 {- |
 This module contains the various datatypes which model the state of the line; that is, the characters displayed and the position of the cursor.
 -}

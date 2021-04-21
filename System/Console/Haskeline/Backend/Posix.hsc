@@ -1,3 +1,8 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+-- {-# LANGUAGE AllowAmbiguousTypes #-}
+#endif
 module System.Console.Haskeline.Backend.Posix (
                         withPosixGetEvent,
                         posixLayouts,
@@ -43,6 +48,9 @@ import GHC.IO.Exception
 import GHC.IO.Handle.Types hiding (getState)
 import GHC.IO.Handle.Internals
 import System.Posix.Internals (FD)
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
 #if defined(USE_TERMIOS_H) || defined(__ANDROID__)
 #include <termios.h>
@@ -104,7 +112,11 @@ tryGetLayouts (f:fs) = do
 --------------------
 -- Key sequences
 
-getKeySequences :: (MonadIO m, MonadReader Prefs m)
+getKeySequences :: (MonadIO m, MonadReader Prefs m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                   )
         => Handle -> [(String,Key)] -> m (TreeMap Char Key)
 getKeySequences h tinfos = do
     sttys <- liftIO $ sttyKeys h
@@ -203,7 +215,11 @@ lookupChars (TreeMap tm) (c:cs) = case Map.lookup c tm of
 
 -----------------------------
 
-withPosixGetEvent :: (MonadIO m, MonadMask m, MonadReader Prefs m)
+withPosixGetEvent :: (MonadIO m, MonadMask m, MonadReader Prefs m
+#if MIN_VERSION_base(4,14,0)
+                     , Total m
+#endif
+                     )
         => TChan Event -> Handles -> [(String,Key)]
                 -> (m Event -> m a) -> m a
 withPosixGetEvent eventChan h termKeys f = wrapTerminalOps h $ do
@@ -211,18 +227,30 @@ withPosixGetEvent eventChan h termKeys f = wrapTerminalOps h $ do
     withWindowHandler eventChan
         $ f $ liftIO $ getEvent (ehIn h) baseMap eventChan
 
-withWindowHandler :: (MonadIO m, MonadMask m) => TChan Event -> m a -> m a
+withWindowHandler :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                     ) => TChan Event -> m a -> m a
 withWindowHandler eventChan = withHandler windowChange $
     Catch $ atomically $ writeTChan eventChan WindowResize
 
-withSigIntHandler :: (MonadIO m, MonadMask m) => m a -> m a
+withSigIntHandler :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                     , Total m
+#endif
+                     ) => m a -> m a
 withSigIntHandler f = do
     tid <- liftIO myThreadId
     withHandler keyboardSignal
             (Catch (throwTo tid Interrupt))
             f
 
-withHandler :: (MonadIO m, MonadMask m) => Signal -> Handler -> m a -> m a
+withHandler :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+               , Total m
+#endif
+               ) => Signal -> Handler -> m a -> m a
 withHandler signal handler f = do
     old_handler <- liftIO $ installHandler signal handler Nothing
     f `finally` liftIO (installHandler signal old_handler Nothing)
@@ -281,8 +309,16 @@ posixRunTerm ::
     Handles
     -> [IO (Maybe Layout)]
     -> [(String,Key)]
-    -> (forall m b . (MonadIO m, MonadMask m) => m b -> m b)
-    -> (forall m . (MonadMask m, CommandMonad m) => EvalTerm (PosixT m))
+    -> (forall m b . (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                     , Total m
+#endif
+                     ) => m b -> m b)
+    -> (forall m . (MonadMask m, CommandMonad m
+#if MIN_VERSION_base(4,14,0)
+                     , Total m
+#endif
+                   ) => EvalTerm (PosixT m))
     -> IO RunTerm
 posixRunTerm hs layoutGetters keys wrapGetEvent evalBackend = do
     ch <- newTChanIO
@@ -304,6 +340,9 @@ posixRunTerm hs layoutGetters keys wrapGetEvent evalBackend = do
                 }
 
 type PosixT m = ReaderT Handles m
+#if MIN_VERSION_base(4,14,0)
+instance Total (PosixT m)
+#endif
 
 runPosixT :: Handles -> PosixT m a -> m a
 runPosixT h = runReaderT' h
@@ -338,7 +377,11 @@ posixFileRunTerm hs = do
 -- NOTE: If we set stdout to NoBuffering, there can be a flicker effect when many
 -- characters are printed at once.  We'll keep it buffered here, and let the Draw
 -- monad manually flush outputs that don't print a newline.
-wrapTerminalOps :: (MonadIO m, MonadMask m) => Handles -> m a -> m a
+wrapTerminalOps :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                   ) => Handles -> m a -> m a
 wrapTerminalOps hs =
     bracketSet (hGetBuffering h_in) (hSetBuffering h_in) NoBuffering
     -- TODO: block buffering?  Certain \r and \n's are causing flicker...

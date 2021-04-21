@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Completion(
                             CompletionFunc,
                             Completion(..),
@@ -21,6 +25,9 @@ import Control.Monad(forM)
 
 import System.Console.Haskeline.Directory
 import System.Console.Haskeline.Monads
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
 -- | Performs completions from the given line state.
 --
@@ -94,7 +101,11 @@ filenameWordBreakChars :: String
 filenameWordBreakChars = " \t\n`@$><=;|&{("
 
 -- A completion command for file and folder names.
-completeFilename :: MonadIO m => CompletionFunc m
+completeFilename :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+                    ) => CompletionFunc m
 completeFilename  = completeQuotedWord (Just '\\') "\"'" listFiles
                         $ completeWord (Just '\\') ("\"\'" ++ filenameWordBreakChars)
                                 listFiles
@@ -158,7 +169,11 @@ isUnquoted esc qs s = case splitAtQuote esc qs s of
 
 
 -- | List all of the files or folders beginning with this path.
-listFiles :: MonadIO m => FilePath -> m [Completion]
+listFiles :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+             , Total m
+#endif
+              ) => FilePath -> m [Completion]
 listFiles path = liftIO $ do
     fixedDir <- fixPath dir
     dirExists <- doesDirectoryExist fixedDir

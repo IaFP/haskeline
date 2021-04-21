@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors #-}
+#endif
 module System.Console.Haskeline.Command.Undo where
 
 import System.Console.Haskeline.Command
@@ -5,6 +9,9 @@ import System.Console.Haskeline.LineState
 import System.Console.Haskeline.Monads
 
 import Control.Monad
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (Total)
+#endif
 
 data Undo = Undo {pastUndo, futureRedo :: [InsertMode]}
 
@@ -38,13 +45,21 @@ redoFuture ls u@Undo {futureRedo = (futureLS:lss)}
 
 
 
-saveForUndo :: (Save s, MonadState Undo m)
+saveForUndo :: (Save s, MonadState Undo m
+#if MIN_VERSION_base(4,14,0)
+               , Total m
+#endif
+               )
                 => Command m s s
 saveForUndo s = do
     modify (saveToUndo s)
     return s
 
-commandUndo, commandRedo :: (MonadState Undo m, Save s) => Command m s s
+commandUndo, commandRedo :: (MonadState Undo m, Save s
+#if MIN_VERSION_base(4,14,0)
+                            , Total m
+#endif
+                            ) => Command m s s
 commandUndo = simpleCommand $ liftM Right . update . undoPast
 commandRedo = simpleCommand $ liftM Right . update . redoFuture
 

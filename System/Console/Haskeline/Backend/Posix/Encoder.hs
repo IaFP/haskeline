@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
 {- | This module provides a wrapper for I/O encoding for the "old" and "new" ways.
 The "old" way uses iconv+utf8-string.
 The "new" way uses the base library's built-in encoding functionality.
@@ -19,6 +23,9 @@ import System.Console.Haskeline.Monads
 
 import GHC.IO.Encoding (initLocaleEncoding)
 import System.Console.Haskeline.Recover
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
 
 -- | An 'ExternalHandle' is a handle which may or may not be in the correct
@@ -42,7 +49,11 @@ externalHandle = ExternalHandle OtherMode
 
 -- | Use to ensure that an external handle is in the correct mode
 -- for the duration of the given action.
-withCodingMode :: (MonadIO m, MonadMask m) => ExternalHandle -> m a -> m a
+withCodingMode :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                  , Total m
+#endif
+                  ) => ExternalHandle -> m a -> m a
 withCodingMode ExternalHandle {externalMode=CodingMode} act = act
 withCodingMode (ExternalHandle OtherMode h) act = do
     bracket (liftIO $ hGetEncoding h)

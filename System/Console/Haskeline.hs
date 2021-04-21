@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
 {- |
 
 A rich user interface for line input in command-line programs.  Haskeline is
@@ -92,6 +96,9 @@ import System.Console.Haskeline.RunCommand
 import Control.Monad.Catch (MonadMask, handle)
 import Data.Char (isSpace, isPrint)
 import System.IO
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
 
 -- | A useful default.  In particular:
@@ -103,7 +110,11 @@ import System.IO
 --           autoAddHistory = True
 --           }
 -- @
-defaultSettings :: MonadIO m => Settings m
+defaultSettings :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                   ) => Settings m
 defaultSettings = Settings {complete = completeFilename,
                         historyFile = Nothing,
                         autoAddHistory = True}
@@ -114,13 +125,21 @@ Unicode characters.
 -}
 
 -- | Write a Unicode string to the user's standard output.
-outputStr :: MonadIO m => String -> InputT m ()
+outputStr :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+             , Total m
+#endif
+             ) => String -> InputT m ()
 outputStr xs = do
     putter <- InputT $ asks putStrOut
     liftIO $ putter xs
 
 -- | Write a string to the user's standard output, followed by a newline.
-outputStrLn :: MonadIO m => String -> InputT m ()
+outputStrLn :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+             , Total m
+#endif
+               ) => String -> InputT m ()
 outputStrLn = outputStr . (++ "\n")
 
 
@@ -140,7 +159,11 @@ an @EOF@ was encountered before any characters were read.
 If @'autoAddHistory' == 'True'@ and the line input is nonblank (i.e., is not all
 spaces), it will be automatically added to the history.
 -}
-getInputLine :: (MonadIO m, MonadMask m)
+getInputLine :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+             , Total m
+#endif
+                )
             => String -- ^ The input prompt
                             -> InputT m (Maybe String)
 getInputLine = promptedInput (getInputCmdLine emptyIM) $ runMaybeT . getLocaleLine
@@ -160,7 +183,11 @@ Some examples of calling of this function are:
 > getInputLineWithInitial "prompt> " ("left", "") -- The cursor starts at the end of the line.
 > getInputLineWithInitial "prompt> " ("left ", "right") -- The cursor starts before the second word.
  -}
-getInputLineWithInitial :: (MonadIO m, MonadMask m)
+getInputLineWithInitial :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                          , Total m
+#endif
+                           )
                             => String           -- ^ The input prompt
                             -> (String, String) -- ^ The initial value left and right of the cursor
                             -> InputT m (Maybe String)
@@ -169,7 +196,11 @@ getInputLineWithInitial prompt (left,right) = promptedInput (getInputCmdLine ini
   where
     initialIM = insertString left $ moveToStart $ insertString right $ emptyIM
 
-getInputCmdLine :: (MonadIO m, MonadMask m) => InsertMode -> TermOps -> String -> InputT m (Maybe String)
+getInputCmdLine :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                   ) => InsertMode -> TermOps -> String -> InputT m (Maybe String)
 getInputCmdLine initialIM tops prefix = do
     emode <- InputT $ asks editMode
     result <- runInputCmdT tops $ case emode of
@@ -179,7 +210,11 @@ getInputCmdLine initialIM tops prefix = do
     maybeAddHistory result
     return result
 
-maybeAddHistory :: forall m . MonadIO m => Maybe String -> InputT m ()
+maybeAddHistory :: forall m . (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+                          , Total m
+#endif
+                              ) => Maybe String -> InputT m ()
 maybeAddHistory result = do
     settings :: Settings m <- InputT ask
     histDupes <- InputT $ asks historyDuplicates
@@ -202,7 +237,11 @@ for a newline.
 When using file-style interaction, a newline will be read if it is immediately
 available after the input character.
 -}
-getInputChar :: (MonadIO m, MonadMask m) => String -- ^ The input prompt
+getInputChar :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                , Total m
+#endif
+                ) => String -- ^ The input prompt
                     -> InputT m (Maybe Char)
 getInputChar = promptedInput getInputCmdChar $ \fops -> do
                         c <- getPrintableChar fops
@@ -216,11 +255,19 @@ getPrintableChar fops = do
         Just False -> getPrintableChar fops
         _ -> return c
 
-getInputCmdChar :: (MonadIO m, MonadMask m) => TermOps -> String -> InputT m (Maybe Char)
+getInputCmdChar :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                   ) => TermOps -> String -> InputT m (Maybe Char)
 getInputCmdChar tops prefix = runInputCmdT tops
         $ runCommandLoop tops prefix acceptOneChar emptyIM
 
-acceptOneChar :: Monad m => KeyCommand m InsertMode (Maybe Char)
+acceptOneChar :: (Monad m
+#if MIN_VERSION_base(4,14,0)
+                 , Total m
+#endif
+                 ) => KeyCommand m InsertMode (Maybe Char)
 acceptOneChar = choiceCmd [useChar $ \c s -> change (insertChar c) s
                                                 >> return (Just c)
                           , ctrlChar 'l' +> clearScreenCmd >|>
@@ -241,7 +288,11 @@ earlier than 2.5, 'getPassword' will incorrectly echo back input on MinTTY
 consoles (such as Cygwin or MSYS).
 -}
 
-getPassword :: (MonadIO m, MonadMask m) => Maybe Char -- ^ A masking character; e.g., @Just \'*\'@
+getPassword :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+               , Total m
+#endif
+               ) => Maybe Char -- ^ A masking character; e.g., @Just \'*\'@
                             -> String -> InputT m (Maybe String)
 getPassword x = promptedInput
                     (\tops prefix -> runInputCmdT tops
@@ -273,7 +324,11 @@ and 'historyFile' flags.
 -- | Wrapper for input functions.
 -- This is the function that calls "wrapFileInput" around file backend input
 -- functions (see Term.hs).
-promptedInput :: MonadIO m => (TermOps -> String -> InputT m a)
+promptedInput :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+                , Total m
+#endif
+                 ) => (TermOps -> String -> InputT m a)
                         -> (FileOps -> IO a)
                         -> String -> InputT m a
 promptedInput doTerm doFile prompt = do
@@ -311,7 +366,11 @@ may immediately terminate the program after the second time that the user presse
 Ctrl-C.
 
 -}
-withInterrupt :: (MonadIO m, MonadMask m) => InputT m a -> InputT m a
+withInterrupt :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                , Total m
+#endif
+                 ) => InputT m a -> InputT m a
 withInterrupt act = do
     rterm <- InputT ask
     wrapInterrupt rterm act
@@ -325,7 +384,11 @@ handleInterrupt f = handle $ \Interrupt -> f
 {- | Return a printing function, which in terminal-style interactions is
 thread-safe and may be run concurrently with user input without affecting the
 prompt. -}
-getExternalPrint :: MonadIO m => InputT m (String -> IO ())
+getExternalPrint :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+                , Total m
+#endif
+                    ) => InputT m (String -> IO ())
 getExternalPrint = do
     rterm <- InputT ask
     return $ case termOps rterm of

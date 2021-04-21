@@ -1,6 +1,9 @@
 #if __GLASGOW_HASKELL__ < 802
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Backend.Terminfo(
                             Draw(),
                             runTerminfoDraw
@@ -24,6 +27,10 @@ import System.Console.Haskeline.Backend.WCWidth
 import System.Console.Haskeline.Key
 
 import qualified Control.Monad.Trans.Writer as Writer
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+import qualified Control.Monad.Trans.Reader as R
+#endif
 
 ----------------------------------------------------------------
 -- Low-level terminal output
@@ -101,28 +108,72 @@ setRow r len rs = TermRows {rowLengths = Map.insert r len (rowLengths rs),
 lookupCells :: TermRows -> Int -> Int
 lookupCells (TermRows rc _) r = Map.findWithDefault 0 r rc
 
+#if MIN_VERSION_base(4,14,0)
+newtype (Total m) => Draw m a = Draw {unDraw :: (ReaderT Actions
+                                     (ReaderT Terminal
+                                       (StateT TermRows
+                                         (StateT TermPos
+                                           (PosixT m))))) a}
+    deriving (Functor
+              -- , Applicative , Monad
+              , MonadIO
+              , MonadThrow
+              , MonadMask
+              , MonadCatch
+              , MonadReader Actions, MonadReader Terminal, MonadState TermPos,
+              MonadState TermRows, MonadReader Handles)
+
+liftReaderT :: m a -> ReaderT r m a
+liftReaderT m = R.ReaderT (const m)
+{-# INLINE liftReaderT #-}
+  
+instance (Total m, Monad m) => Applicative (Draw m) where
+  pure a = Draw ((liftReaderT . pure) a)
+  (Draw f) <*> (Draw a) = Draw (f <*> a) 
+
+instance (Total m, Monad m) => Monad (Draw m) where
+  return = pure 
+  m >>= f = Draw $ do m' <- unDraw m
+                      m'' <- unDraw (f m')
+                      return m''
+                      
+#else
 newtype Draw m a = Draw {unDraw :: (ReaderT Actions
                                     (ReaderT Terminal
                                     (StateT TermRows
                                     (StateT TermPos
                                     (PosixT m))))) a}
-    deriving (Functor, Applicative, Monad, MonadIO,
+    deriving (Functor, Applicative
+              , Monad, MonadIO,
               MonadMask, MonadThrow, MonadCatch,
               MonadReader Actions, MonadReader Terminal, MonadState TermPos,
               MonadState TermRows, MonadReader Handles)
 
+#endif
+
+
+
+
 instance MonadTrans Draw where
     lift = Draw . lift . lift . lift . lift . lift
+#if MIN_VERSION_base(4,14,0)
+instance Total (Draw m)
+instance Total (ReaderT Terminal (StateT TermRows (StateT TermPos (PosixT m))))
+#endif
 
-evalDraw :: forall m . (MonadReader Layout m, CommandMonad m) => Terminal -> Actions -> EvalTerm (PosixT m)
+evalDraw :: forall m . (MonadReader Layout m, CommandMonad m
+#if MIN_VERSION_base(4,14,0)
+                       , Total m
+#endif
+                       ) => Terminal -> Actions -> EvalTerm (PosixT m)
 evalDraw term actions = EvalTerm eval liftE
   where
-    liftE = Draw . lift . lift . lift . lift
-    eval = evalStateT' initTermPos
+    liftE s = (Draw . lift . lift . lift . lift) s
+    eval s = (evalStateT' initTermPos
                             . evalStateT' initTermRows
                             . runReaderT' term
                             . runReaderT' actions
-                            . unDraw 
+                            . unDraw) s
  
 
 runTerminfoDraw :: Handles -> MaybeT IO RunTerm
@@ -138,7 +189,11 @@ runTerminfoDraw h = do
                 (evalDraw term actions)
 
 -- If the keypad on/off capabilities are defined, wrap the computation with them.
-wrapKeypad :: (MonadIO m, MonadMask m) => Handle -> Terminal -> m a -> m a
+wrapKeypad :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+              , Total m
+#endif
+              ) => Handle -> Terminal -> m a -> m a
 wrapKeypad h term f = (maybeOutput keypadOn >> f)
                             `finally` maybeOutput keypadOff
   where
@@ -185,9 +240,17 @@ type TermAction = Actions -> TermOutput
 
 type ActionT = Writer.WriterT TermAction
 
-type ActionM a = forall m . (MonadReader Layout m, MonadIO m) => ActionT (Draw m) a
+type ActionM a = forall m . (MonadReader Layout m, MonadIO m
+#if MIN_VERSION_base(4,14,0)
+                            , Total m
+#endif
+                            ) => ActionT (Draw m) a
 
-runActionT :: MonadIO m => ActionT (Draw m) a -> Draw m a
+runActionT :: (MonadIO m
+#if MIN_VERSION_base(4,14,0)
+              , Total m
+#endif
+              ) => ActionT (Draw m) a -> Draw m a
 runActionT m = do
     (x,action) <- Writer.runWriterT m
     toutput <- asks action
@@ -351,7 +414,11 @@ repositionT _ s = do
     put initTermRows
     drawLineDiffT ([],[]) s
 
-instance (MonadIO m, MonadMask m, MonadReader Layout m) => Term (Draw m) where
+instance (MonadIO m, MonadMask m, MonadReader Layout m
+#if MIN_VERSION_base(4,14,0)
+         , Total m
+#endif
+         ) => Term (Draw m) where
     drawLineDiff xs ys = runActionT $ drawLineDiffT xs ys
     reposition layout lc = runActionT $ repositionT layout lc
     

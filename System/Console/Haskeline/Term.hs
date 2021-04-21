@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators, UndecidableSuperClasses #-}
+#endif
 module System.Console.Haskeline.Term where
 
 import System.Console.Haskeline.Monads
@@ -24,6 +28,9 @@ import Control.Monad(liftM,when,guard)
 import System.IO.Error (isEOFError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
 class (MonadReader Layout m, MonadIO m, MonadMask m) => Term m where
     reposition :: Layout -> LineChars -> m ()
@@ -42,15 +49,27 @@ data RunTerm = RunTerm {
             -- | Write unicode characters to stdout.
             putStrOut :: String -> IO (),
             termOps :: Either TermOps FileOps,
-            wrapInterrupt :: forall a m . (MonadIO m, MonadMask m) => m a -> m a,
+            wrapInterrupt :: forall a m . (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                                          , Total m
+#endif
+                                          ) => m a -> m a,
             closeTerm :: IO ()
     }
 
 -- | Operations needed for terminal-style interaction.
 data TermOps = TermOps
     { getLayout :: IO Layout
-    , withGetEvent :: forall m a . CommandMonad m => (m Event -> m a) -> m a
-    , evalTerm :: forall m . CommandMonad m => EvalTerm m
+    , withGetEvent :: forall m a . (CommandMonad m
+#if MIN_VERSION_base(4,14,0)
+                                  , Total m
+#endif
+                                   ) => (m Event -> m a) -> m a
+    , evalTerm :: forall m . (CommandMonad m
+#if MIN_VERSION_base(4,14,0)
+                             , Total m
+#endif
+                             ) => EvalTerm m
     , saveUnusedKeys :: [Key] -> IO ()
     , externalPrint :: String -> IO ()
     }
@@ -76,7 +95,11 @@ flushEventQueue print' eventChan = yield >> loopUntilFlushed
 -- Backends can assume that getLocaleLine, getLocaleChar and maybeReadNewline
 -- are "wrapped" by wrapFileInput.
 data FileOps = FileOps {
-            withoutInputEcho :: forall m a . (MonadIO m, MonadMask m) => m a -> m a,
+            withoutInputEcho :: forall m a . (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                                             , Total m
+#endif
+                                             ) => m a -> m a,
             -- ^ Perform an action without echoing input.
             wrapFileInput :: forall a . IO a -> IO a,
             getLocaleLine :: MaybeT IO String,
@@ -92,11 +115,23 @@ isTerminalStyle r = case termOps r of
 
 -- Specific, hidden terminal action type
 -- Generic terminal actions which are independent of the Term being used.
-data EvalTerm m
-    = forall n . (Term n, CommandMonad n)
-            => EvalTerm (forall a . n a -> m a) (forall a . m a -> n a)
+data
+#if MIN_VERSION_base(4,14,0)
+ Total m =>
+#endif
+  EvalTerm m
+    = forall n . (Term n, CommandMonad n
+#if MIN_VERSION_base(4,14,0)
+                 , Total n
+#endif
+                  )
+            => EvalTerm (forall a. n a -> m a) (forall a. m a -> n a)
 
-mapEvalTerm :: (forall a . n a -> m a) -> (forall a . m a -> n a)
+mapEvalTerm ::
+#if MIN_VERSION_base(4,14,0)
+             (Total n, Total m) =>
+#endif
+    (forall a. n a -> m a) -> (forall a. m a -> n a)
         -> EvalTerm n -> EvalTerm m
 mapEvalTerm eval liftE (EvalTerm eval' liftE')
     = EvalTerm (eval . eval') (liftE' . liftE)
@@ -106,16 +141,17 @@ data Interrupt = Interrupt
 
 instance Exception Interrupt where
 
-
-
 class (MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
         => CommandMonad m where
     runCompletion :: (String,String) -> m (String,[Completion])
 
 instance {-# OVERLAPPABLE #-} (MonadTrans t, CommandMonad m, MonadReader Prefs (t m),
         MonadIO (t m), MonadMask (t m),
-        MonadReader Layout (t m))
-            => CommandMonad (t m) where
+        MonadReader Layout (t m), 
+#if MIN_VERSION_base(4,14,0)
+        m @@ (String, [Completion]), t @@ m
+#endif
+                              ) => CommandMonad (t m) where
     runCompletion = lift . runCompletion
 
 -- Utility function for drawLineDiff instances.
@@ -161,14 +197,22 @@ data Layout = Layout {width, height :: Int}
 -- Utility functions for the various backends.
 
 -- | Utility function since we're not using the new IO library yet.
-hWithBinaryMode :: (MonadIO m, MonadMask m) => Handle -> m a -> m a
+hWithBinaryMode :: (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                   , Total m
+#endif
+                   ) => Handle -> m a -> m a
 hWithBinaryMode h = bracket (liftIO $ hGetEncoding h)
                         (maybe (return ()) (liftIO . hSetEncoding h))
                         . const . (liftIO (hSetBinaryMode h True) >>)
 
 -- | Utility function for changing a property of a terminal for the duration of
 -- a computation.
-bracketSet :: (MonadMask m, MonadIO m) => IO a -> (a -> IO ()) -> a -> m b -> m b
+bracketSet :: (MonadMask m, MonadIO m
+#if MIN_VERSION_base(4,14,0)
+              , Total m
+#endif
+              ) => IO a -> (a -> IO ()) -> a -> m b -> m b
 bracketSet getState set newState f = bracket (liftIO getState)
                             (liftIO . set)
                             (\_ -> liftIO (set newState) >> f)

@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
 module System.Console.Haskeline.RunCommand (runCommandLoop) where
 
 import System.Console.Haskeline.Command
@@ -10,8 +14,15 @@ import System.Console.Haskeline.Key
 import Control.Exception (SomeException)
 import Control.Monad
 import Control.Monad.Catch (handle, throwM)
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
-runCommandLoop :: (CommandMonad m, MonadState Layout m, LineState s)
+runCommandLoop :: (CommandMonad m, MonadState Layout m, LineState s
+#if MIN_VERSION_base(4,14,0)
+                  , Total m
+#endif
+                  )
     => TermOps -> String -> KeyCommand m s a -> s -> m a
 runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
     = case e of -- NB: Need to separate this case out from the above pattern
@@ -22,8 +33,14 @@ runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
                     cmds 
 
 runCommandLoop' :: forall m n s a . (Term n, CommandMonad n,
-        MonadState Layout m, LineState s)
-        => (forall b . m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
+                                     MonadState Layout m, LineState s
+#if MIN_VERSION_base(4,14,0)
+                                   , Total m
+                                   , Total n
+#endif
+                                    
+                                    )
+        => (forall b. m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
         -> n a
 runCommandLoop' liftE tops prefix initState cmds getEvent = do
     let s = lineChars prefix initState
@@ -46,7 +63,11 @@ runCommandLoop' liftE tops prefix initState cmds getEvent = do
                         printPreservingLineChars s str
                         readMoreKeys s next
 
-    loopCmd :: LineChars -> CmdM m (a,[Key]) -> n a
+    loopCmd ::
+#if MIN_VERSION_base(4,14,0)
+               (n @@ CmdM m (a, [Key]), n @@ (), n @@ BellStyle, n @@ Prefs, n @@ LineChars) =>
+#endif
+               LineChars -> CmdM m (a,[Key]) -> n a
     loopCmd s (GetKey next) = readMoreKeys s next
     -- If there are multiple consecutive LineChanges, only render the diff
     -- to the last one, and skip the rest. This greatly improves speed when
@@ -68,7 +89,11 @@ printPreservingLineChars s str =  do
     printLines . lines $ str
     drawLine s
 
-drawReposition :: (Term n, MonadState Layout m)
+drawReposition :: (Term n, MonadState Layout m
+#if MIN_VERSION_base(4,14,0)
+                  , Total n, m @@ Layout, m @@ ()
+#endif
+                  )
     => (forall a . m a -> n a) -> TermOps -> LineChars -> n ()
 drawReposition liftE tops s = do
     oldLayout <- liftE get
@@ -76,8 +101,12 @@ drawReposition liftE tops s = do
     liftE (put newLayout)
     when (oldLayout /= newLayout) $ reposition oldLayout s
 
-drawEffect :: (Term m, MonadReader Prefs m)
-    => Prefix -> LineChars -> Effect -> m LineChars
+drawEffect :: (Term m, MonadReader Prefs m
+#if MIN_VERSION_base(4,14,0)
+              , m @@ Prefs, m @@ BellStyle, m @@ ()
+#endif
+              )
+              => Prefix -> LineChars -> Effect -> m LineChars
 drawEffect prefix s (LineChange ch) = do
     let t = ch prefix
     drawLineDiff s t
@@ -93,7 +122,11 @@ drawEffect _ s (PrintLines ls) = do
     return s
 drawEffect _ s RingBell = actBell >> return s
 
-actBell :: (Term m, MonadReader Prefs m) => m ()
+actBell :: (Term m, MonadReader Prefs m
+#if MIN_VERSION_base(4,14,0)
+           , m @@ BellStyle, m @@ Prefs
+#endif
+           ) => m ()
 actBell = do
     style <- asks bellStyle
     case style of

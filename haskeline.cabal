@@ -47,6 +47,9 @@ Library
                    filepath >= 1.2 && < 1.5, transformers >= 0.2 && < 0.6,
                    process >= 1.0 && < 1.7, stm >= 2.4 && < 2.6,
                    exceptions == 0.10.*
+    if impl(ghc >= 8.10)
+       build-depends: ghc-prim   >= 0.6.1
+               
     Default-Language: Haskell98
     Default-Extensions:
                 ForeignFunctionInterface, Rank2Types, FlexibleInstances,
@@ -63,6 +66,7 @@ Library
                 System.Console.Haskeline.Completion
                 System.Console.Haskeline.History
                 System.Console.Haskeline.IO
+                System.Console.Haskeline.Monads
     Other-Modules:
                 System.Console.Haskeline.Backend
                 System.Console.Haskeline.Backend.WCWidth
@@ -75,7 +79,7 @@ Library
                 System.Console.Haskeline.InputT
                 System.Console.Haskeline.Key
                 System.Console.Haskeline.LineState
-                System.Console.Haskeline.Monads
+                -- System.Console.Haskeline.Monads
                 System.Console.Haskeline.Prefs
                 System.Console.Haskeline.Recover
                 System.Console.Haskeline.RunCommand

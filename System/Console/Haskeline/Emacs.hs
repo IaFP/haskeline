@@ -1,6 +1,10 @@
 #if __GLASGOW_HASKELL__ < 802
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
+
 module System.Console.Haskeline.Emacs where
 
 import System.Console.Haskeline.Command
@@ -15,9 +19,30 @@ import System.Console.Haskeline.InputT
 
 import Control.Monad.Catch (MonadMask)
 import Data.Char
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+import System.Console.Haskeline.Prefs (Prefs)
+import GHC.IORef (IORef)
+import System.Console.Haskeline.History (History)
+#endif
 
-type InputCmd s t = forall m . (MonadIO m, MonadMask m) => Command (InputCmdT m) s t
-type InputKeyCmd s t = forall m . (MonadIO m, MonadMask m) => KeyCommand (InputCmdT m) s t
+type InputCmd s t = forall m . (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                               , Total m
+                               , Total (ReaderT Prefs (ReaderT (Settings m) m))
+                               , Total (ReaderT (IORef History) (ReaderT (IORef KillRing) (ReaderT Prefs (ReaderT (Settings m) m))))
+#endif
+                               ) => Command (InputCmdT m) s t
+type InputKeyCmd s t = forall m . (MonadIO m, MonadMask m
+#if MIN_VERSION_base(4,14,0)
+                                  , Total m
+                                  , Total (ReaderT Prefs (ReaderT (Settings m) m))
+                                  , Total (ReaderT
+                                           (IORef History)
+                                           (ReaderT (IORef KillRing)
+                                            (ReaderT Prefs (ReaderT (Settings m) m))))
+#endif
+                                  ) => KeyCommand (InputCmdT m) s t
 
 emacsCommands :: InputKeyCmd InsertMode (Maybe String)
 emacsCommands = choiceCmd [

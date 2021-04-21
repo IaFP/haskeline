@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Command.Completion(
                             CompletionFunc,
                             Completion,
@@ -15,13 +19,20 @@ import System.Console.Haskeline.Completion
 import System.Console.Haskeline.Monads
 
 import Data.List(transpose, unfoldr)
+#if MIN_VERSION_base(4,14,0)
+import GHC.Types (type (@@), Total)
+#endif
 
 useCompletion :: InsertMode -> Completion -> InsertMode
 useCompletion im c = insertString r im
     where r | isFinished c = replacement c ++ " "
             | otherwise = replacement c
 
-askIMCompletions :: CommandMonad m =>
+askIMCompletions :: (CommandMonad m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+                    ) =>
             Command m InsertMode (InsertMode, [Completion])
 askIMCompletions (IMode xs ys) = do
     (rest, completions) <- lift $ runCompletion (withRev graphemesToString xs,
@@ -32,7 +43,11 @@ askIMCompletions (IMode xs ys) = do
     withRev f = reverse . f . reverse
 
 -- | Create a 'Command' for word completion.
-completionCmd :: (MonadState Undo m, CommandMonad m)
+completionCmd :: (MonadState Undo m, CommandMonad m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+                 )
                 => Key -> KeyCommand m InsertMode InsertMode
 completionCmd k = k +> saveForUndo >|> \oldIM -> do
     (rest,cs) <- askIMCompletions oldIM
@@ -41,7 +56,11 @@ completionCmd k = k +> saveForUndo >|> \oldIM -> do
         [c] -> setState $ useCompletion rest c
         _ -> presentCompletions k oldIM rest cs
 
-presentCompletions :: (MonadReader Prefs m, MonadReader Layout m)
+presentCompletions :: (MonadReader Prefs m, MonadReader Layout m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+                      )
         => Key -> InsertMode -> InsertMode
             -> [Completion] -> CmdM m InsertMode
 presentCompletions k oldIM rest cs = do
@@ -54,7 +73,11 @@ presentCompletions k oldIM rest cs = do
                 then return withPartial
                 else pagingCompletion k prefs cs withPartial
 
-menuCompletion :: Monad m => Key -> [InsertMode] -> Command m InsertMode InsertMode
+menuCompletion :: (Monad m
+#if MIN_VERSION_base(4,14,0)
+                  , Total m
+#endif
+                  ) => Key -> [InsertMode] -> Command m InsertMode InsertMode
 menuCompletion k = loop
     where
         loop [] = setState
@@ -67,7 +90,11 @@ makePartialCompletion im completions = insertString partial im
     commonPrefix (c:cs) (d:ds) | c == d = c : commonPrefix cs ds
     commonPrefix _ _ = ""
 
-pagingCompletion :: MonadReader Layout m => Key -> Prefs
+pagingCompletion :: (MonadReader Layout m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+                    ) => Key -> Prefs
                 -> [Completion] -> Command m InsertMode InsertMode
 pagingCompletion k prefs completions = \im -> do
         ls <- asks $ makeLines (map display completions)
@@ -81,7 +108,11 @@ pagingCompletion k prefs completions = \im -> do
             then pageAction
             else effect RingBell >> try (k +> const pageAction) im
 
-askFirst :: Monad m => Prefs -> Int -> CmdM m ()
+askFirst :: (Monad m
+#if MIN_VERSION_base(4,14,0)
+            , Total m
+#endif
+            ) => Prefs -> Int -> CmdM m ()
             -> CmdM m ()
 askFirst prefs n cmd
     | maybe False (< n) (completionPromptLimit prefs) = do
@@ -93,7 +124,11 @@ askFirst prefs n cmd
             ]
     | otherwise = cmd
 
-pageCompletions :: MonadReader Layout m => [String] -> CmdM m ()
+pageCompletions :: (MonadReader Layout m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+                   ) => [String] -> CmdM m ()
 pageCompletions [] = return ()
 pageCompletions wws@(w:ws) = do
     _ <- setState $ Message "----More----"
@@ -107,7 +142,11 @@ pageCompletions wws@(w:ws) = do
     oneLine = clearMessage >> effect (PrintLines [w]) >> pageCompletions ws
     clearMessage = effect $ LineChange $ const ([],[])
 
-printPage :: MonadReader Layout m => [String] -> CmdM m ()
+printPage :: (MonadReader Layout m
+#if MIN_VERSION_base(4,14,0)
+                    , Total m
+#endif
+             ) => [String] -> CmdM m ()
 printPage ls = do
     layout <- ask
     let (ps,rest) = splitAt (height layout - 1) ls
