@@ -66,6 +66,9 @@ data CmdM m a   = GetKey (KeyMap (CmdM m a))
                 | DoEffect Effect (CmdM m a)
                 | CmdM (m (CmdM m a))
                 | Result a
+#if MIN_VERSION_base(4,14,0)
+instance Total (CmdM m)
+#endif
 
 type Command m s t = s -> CmdM m t
 

@@ -43,8 +43,74 @@ data Settings m = Settings {complete :: CompletionFunc m, -- ^ Custom tab comple
 
 setComplete :: CompletionFunc m -> Settings m -> Settings m
 setComplete f s = s {complete = f}
+{-
+-- #if MIN_VERSION_base(4,14,0)
+-- data InputT m a = InputT {unInputT :: 
+                             ReaderT RunTerm
+                             -- Use ReaderT (IO _) vs StateT so that exceptions (e.g., ctrl-c)
+                             -- don't cause us to lose the existing state.
+                             (ReaderT (IORef History)
+                               (ReaderT (IORef KillRing)
+                                (ReaderT Prefs
+                                 (ReaderT (Settings m) m)))) a}
+  -- deriving (Functor, Applicative, Monad, MonadIO,
+  --            MonadThrow, MonadCatch , MonadMask
+  --          )
+instance (Total m, Functor m) => Functor (InputT m) where
+  fmap f (InputT x) = InputT (fmap f x)
 
+instance (Total m, Applicative m) => Applicative (InputT m) where
+  pure a = InputT $ pure a
+  (InputT f) <*> (InputT a) = InputT (f <*> a)
+  
+instance (Total m, Monad m) => Monad (InputT m) where
+  x >>= f = InputT $ do x' <- unInputT x
+                        x'' <- unInputT (f x')
+                        return x''
+instance (Total m, MonadIO m) => MonadIO (InputT m) where
+  liftIO = InputT . liftIO
 
+instance (Total m, MonadThrow m) => MonadThrow (InputT m) where
+  throwM = InputT . throwM
+
+instance (Total m, MonadCatch m) => MonadCatch (InputT m) where
+  catch m f = InputT $ catch (unInputT m) (\e -> unInputT $ f e)
+
+instance (Total m, MonadMask m) => MonadMask (InputT m) where
+  mask a = InputT $ mask $ \u -> unInputT (a $ q u)
+    where q :: (ReaderT RunTerm
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a -> ReaderT RunTerm
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a)
+            -> InputT m a -> InputT m a
+          q u (InputT b) = InputT $ u b
+
+  uninterruptibleMask a = InputT $ uninterruptibleMask $ \u -> unInputT (a $ q u)
+    where q :: (ReaderT RunTerm
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a -> ReaderT RunTerm
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a)
+            -> InputT m a -> InputT m a
+          q u (InputT b) = InputT $ u b
+  generalBracket acquire release use = mask $ \unmasked -> do
+    resource <- acquire
+    b <- unmasked (use resource) `catch` \e ->
+      do _ <- release resource (ExitCaseException e)
+         throwM e
+    c <- release resource (ExitCaseSuccess b)
+    return (b, c)
+-}  
+-- #else
 -- | A monad transformer which carries all of the state and settings
 -- relevant to a line-reading application.
 newtype InputT m a = InputT {unInputT :: 
@@ -62,12 +128,14 @@ newtype InputT m a = InputT {unInputT ::
                 -- internal MonadState/MonadReader classes.  Otherwise haddock
                 -- displays those instances to the user, and it makes it seem like
                 -- we implement the mtl versions of those classes.
+-- #endif
+
 #if MIN_VERSION_base(4,14,0)
 instance Total (InputT m)
-instance Total (ReaderT (Settings m) m)
-instance Total (ReaderT Prefs (ReaderT (Settings m) m))
-instance Total (ReaderT (IORef KillRing) (ReaderT Prefs (ReaderT (Settings m) m)))
-instance Total (ReaderT (IORef History) (ReaderT (IORef KillRing) (ReaderT Prefs (ReaderT (Settings m) m))))
+-- instance Total (ReaderT (Settings m) m)
+-- instance Total (ReaderT Prefs (ReaderT (Settings m) m))
+-- instance Total (ReaderT (IORef KillRing) (ReaderT Prefs (ReaderT (Settings m) m)))
+-- instance Total (ReaderT (IORef History) (ReaderT (IORef KillRing) (ReaderT Prefs (ReaderT (Settings m) m))))
 #endif
   
 

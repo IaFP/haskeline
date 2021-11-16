@@ -38,7 +38,6 @@ data ViState m = ViState {
 #if MIN_VERSION_base(4,14,0)
 instance Total ViState
 type instance ViState @@ m = ()
-type instance ViState @@ (m :: k -> k') = ()
 #endif
 
 emptyViState :: (Monad m

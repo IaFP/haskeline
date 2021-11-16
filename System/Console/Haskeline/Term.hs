@@ -116,9 +116,9 @@ isTerminalStyle r = case termOps r of
 -- Specific, hidden terminal action type
 -- Generic terminal actions which are independent of the Term being used.
 data
-#if MIN_VERSION_base(4,14,0)
- Total m =>
-#endif
+-- #if MIN_VERSION_base(4,14,0)
+--  Total m =>
+-- #endif
   EvalTerm m
     = forall n . (Term n, CommandMonad n
 #if MIN_VERSION_base(4,14,0)

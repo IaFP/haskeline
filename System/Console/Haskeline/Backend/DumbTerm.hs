@@ -27,35 +27,73 @@ data Window = Window {pos :: Int -- ^ # of visible chars to left of cursor
 
 initWindow :: Window
 initWindow = Window {pos=0}
-
-#if MIN_VERSION_base(4,14,0)
-newtype Total m => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a}
-                deriving (Functor
+{-
+-- #if MIN_VERSION_base(4,14,0)
+data DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a}
+                -- deriving (Functor
                          -- , Applicative
                          -- , Monad
-                         , MonadIO,
-                          MonadThrow, MonadCatch, MonadMask,
-                          MonadState Window, MonadReader Handles)
+                         -- , MonadIO,
+                         -- , MonadThrow, MonadCatch
+                         -- , MonadMask,
+                          -- MonadState Window, MonadReader Handles)
 instance Total (DumbTerm m)
+
+instance (Total m, Functor m) => Functor (DumbTerm m) where
+  fmap f (DumbTerm x) = DumbTerm $ fmap f x
 
 instance (Total m, Monad m) => Applicative (DumbTerm m) where
    pure a = DumbTerm (SS.StateT $ \s -> return (a, s))
    (DumbTerm f) <*> (DumbTerm a) = DumbTerm (f <*> a)
 
 instance (Total m, Monad m) => Monad (DumbTerm m) where
-   return = pure
    x >>= f = DumbTerm $ do x' <- unDumbTerm x
                            x'' <- unDumbTerm (f x')
                            return x''
 
-#else
+instance (Total m, MonadIO m) => MonadIO (DumbTerm m) where
+  liftIO = DumbTerm . liftIO
+  
+
+instance (Total m, MonadThrow m) => MonadThrow (DumbTerm m) where
+  throwM = DumbTerm . throwM
+  
+instance (Total m, MonadCatch m) => MonadCatch (DumbTerm m) where
+  catch m f = DumbTerm $ catch (unDumbTerm m) (\e -> unDumbTerm (f e))
+
+instance (Total m, MonadMask m) => MonadMask (DumbTerm m) where
+  mask a = DumbTerm $ mask $ \u -> unDumbTerm (a $ q u)
+    where q :: (StateT Window (PosixT m) a -> StateT Window (PosixT m) a)
+            -> DumbTerm m a -> DumbTerm m a
+          q u (DumbTerm b) = DumbTerm $ u b
+  uninterruptibleMask a = DumbTerm $ uninterruptibleMask $ \u -> unDumbTerm (a $ q u)
+    where q :: (StateT Window (PosixT m) a -> StateT Window (PosixT m) a)
+            -> DumbTerm m a -> DumbTerm m a
+          q u (DumbTerm b) = DumbTerm $ u b
+  generalBracket acquire release use = mask $ \unmasked -> do
+    resource <- acquire
+    b <- unmasked (use resource) `catch` \e ->
+      do _ <- release resource (ExitCaseException e)
+         throwM e
+    c <- release resource (ExitCaseSuccess b)
+    return (b, c)
+
+instance (Total m, Monad m) => MonadState Window (DumbTerm m) where
+  get   = DumbTerm $ SS.state (\s -> (s, s))
+  put s = DumbTerm $ SS.state (\_ -> ((), s))
+
+instance (Total m, Monad m) => MonadReader Handles (DumbTerm m) where
+  ask = DumbTerm $ ask
+
+-- #else
+-}
 newtype DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a}
                 deriving (Functor, Applicative, Monad, MonadIO,
                           MonadThrow, MonadCatch, MonadMask,
                           MonadState Window, MonadReader Handles)
-#endif
+-- #endif
 
-
+instance Total (DumbTerm m)
 
 type DumbTermM a = forall m . (MonadIO m, MonadReader Layout m
 #if MIN_VERSION_base(4,14,0)

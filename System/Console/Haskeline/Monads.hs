@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 #if __GLASGOW_HASKELL__ >= 810
-{-# LANGUAGE PartialTypeConstructors, TypeOperators #-}
+{-# LANGUAGE PartialTypeConstructors, TypeOperators, UndecidableSuperClasses #-}
 #endif
 
 module System.Console.Haskeline.Monads(

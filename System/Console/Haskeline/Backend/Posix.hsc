@@ -340,9 +340,9 @@ posixRunTerm hs layoutGetters keys wrapGetEvent evalBackend = do
                 }
 
 type PosixT m = ReaderT Handles m
-#if MIN_VERSION_base(4,14,0)
-instance Total (PosixT m)
-#endif
+-- #if MIN_VERSION_base(4,14,0)
+-- instance Total (PosixT m)
+-- #endif
 
 runPosixT :: Handles -> PosixT m a -> m a
 runPosixT h = runReaderT' h
