@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators, IncoherentInstances #-}
+#endif
 module System.Console.Haskeline.InputT where
 
 
@@ -19,6 +23,10 @@ import Data.IORef
 import System.Directory(getHomeDirectory)
 import System.FilePath
 import System.IO
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (type (@), Total)
+#endif
+
 
 -- | Application-specific customizations to the user interface.
 data Settings m = Settings {complete :: CompletionFunc m, -- ^ Custom tab completion.
@@ -41,28 +49,105 @@ setComplete f s = s {complete = f}
 
 -- | A monad transformer which carries all of the state and settings
 -- relevant to a line-reading application.
-newtype InputT m a = InputT {unInputT :: 
-                                ReaderT RunTerm
+newtype
+#if MIN_VERSION_base(4,16,0)
+  m @ a => 
+#endif
+  InputT m a = InputT {unInputT :: 
+                                ReaderT (RunTerm)
                                 -- Use ReaderT (IO _) vs StateT so that exceptions (e.g., ctrl-c)
                                 -- don't cause us to lose the existing state.
                                 (ReaderT (IORef History)
                                 (ReaderT (IORef KillRing)
                                 (ReaderT Prefs
                                 (ReaderT (Settings m) m)))) a}
-                            deriving (Functor, Applicative, Monad, MonadIO,
-                                      MonadThrow, MonadCatch, MonadMask)
+                            deriving (Functor, Applicative
+#if MIN_VERSION_base(4,16,0)
+#else
+                                      , Monad, MonadIO,
+                                      MonadThrow, MonadCatch, MonadMask
+#endif
+
+                                      )
                 -- NOTE: we're explicitly *not* making InputT an instance of our
                 -- internal MonadState/MonadReader classes.  Otherwise haddock
                 -- displays those instances to the user, and it makes it seem like
                 -- we implement the mtl versions of those classes.
 
+#if MIN_VERSION_base(4,16,0)
+{-
+instance (Total m, Functor m) => Functor (InputT m) where
+  fmap f (InputT x) = InputT (fmap f x)
+
+instance (Total m, Applicative m) => Applicative (InputT m) where
+  pure a = InputT $ pure a
+  (InputT f) <*> (InputT a) = InputT (f <*> a)
+-}
+instance (Total m, Monad m) => Monad (InputT m) where
+  x >>= f = InputT $ do x' <- unInputT x
+                        x'' <- unInputT (f x')
+                        return x''
+instance (Total m, MonadIO m) => MonadIO (InputT m) where
+  liftIO = InputT . liftIO
+
+instance (Total m, MonadThrow m) => MonadThrow (InputT m) where
+  throwM = InputT . throwM
+
+instance (Total m, MonadCatch m) => MonadCatch (InputT m) where
+  catch m f = InputT $ catch (unInputT m) (\e -> unInputT $ f e)
+
+instance (MonadIO m, Total m, MonadMask m) => MonadMask (InputT m) where
+  mask a = InputT $ mask $ \u -> unInputT (a $ q u)
+    where q :: (ReaderT (RunTerm)
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a -> ReaderT (RunTerm)
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a)
+            -> InputT m a -> InputT m a
+          q u (InputT b) = InputT $ u b
+
+  uninterruptibleMask a = InputT $ uninterruptibleMask $ \u -> unInputT (a $ q u)
+    where q :: (ReaderT (RunTerm)
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a -> ReaderT (RunTerm)
+                 (ReaderT (IORef History)
+                   (ReaderT (IORef KillRing)
+                     (ReaderT Prefs
+                       (ReaderT (Settings m) m)))) a)
+            -> InputT m a -> InputT m a
+          q u (InputT b) = InputT $ u b
+  generalBracket acquire release use = mask $ \unmasked -> do
+    resource <- acquire
+    b <- unmasked (use resource) `catch` \e ->
+      do _ <- release resource (ExitCaseException e)
+         throwM e
+    c <- release resource (ExitCaseSuccess b)
+    return (b, c)
+#endif
+
+
+
 instance MonadTrans InputT where
     lift = InputT . lift . lift . lift . lift . lift
 
-instance ( Fail.MonadFail m ) => Fail.MonadFail (InputT m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+    Fail.MonadFail m ) => Fail.MonadFail (InputT m) where
     fail = lift . Fail.fail
 
-instance ( MonadFix m ) => MonadFix (InputT m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadFix m ) => MonadFix (InputT m) where
     mfix f = InputT (mfix (unInputT . f))
 
 -- | Run an action in the underlying monad, as per 'lift', passing it a runner
@@ -70,7 +155,12 @@ instance ( MonadFix m ) => MonadFix (InputT m) where
 -- the event that we have some function that takes an action in the underlying
 -- monad as an argument (such as 'lift', 'hoist', 'forkIO', etc) and we want
 -- to compose it with actions in 'InputT'.
-withRunInBase :: Monad m =>
+withRunInBase :: (
+#if MIN_VERSION_base(4,16,0)
+         Total m, MonadReader (RunTerm) m, MonadReader (IORef History) m
+  , MonadReader (IORef KillRing) m, MonadReader Prefs m, MonadReader (Settings m) m,
+#endif
+         Monad m) =>
     ((forall a . InputT m a -> m a) -> m b) -> InputT m b
 withRunInBase inner = InputT $ do
     runTerm <- ask
@@ -133,8 +223,13 @@ runInputT :: (MonadIO m, MonadMask m) => Settings m -> InputT m a -> m a
 runInputT = runInputTBehavior defaultBehavior
 
 -- | Returns 'True' if the current session uses terminal-style interaction.  (See 'Behavior'.)
-haveTerminalUI :: Monad m => InputT m Bool
-haveTerminalUI = InputT $ asks isTerminalStyle
+haveTerminalUI :: (
+#if MIN_VERSION_base(4,16,0)
+        Total m,
+#endif
+         Monad m) => InputT m Bool
+haveTerminalUI = InputT $ do b <- ask
+                             return $ isTerminalStyle b
 
 
 {- | Haskeline has two ways of interacting with the user:
@@ -149,11 +244,11 @@ haveTerminalUI = InputT $ asks isTerminalStyle
  
  For most applications (e.g., a REPL), 'defaultBehavior' should have the correct effect.
 -}
-data Behavior = Behavior (IO RunTerm)
+data (MonadIO m, MonadMask m) => Behavior m = Behavior (IO (RunTerm))
 
 -- | Create and use a RunTerm, ensuring that it will be closed even if
 -- an async exception occurs during the creation or use.
-withBehavior :: (MonadIO m, MonadMask m) => Behavior -> (RunTerm -> m a) -> m a
+withBehavior :: (MonadIO m, MonadMask m) => Behavior m -> (RunTerm -> m a) -> m a
 withBehavior (Behavior run) f = bracket (liftIO run) (liftIO . closeTerm) f
 
 -- | Run a line-reading application according to the given behavior.
@@ -161,7 +256,7 @@ withBehavior (Behavior run) f = bracket (liftIO run) (liftIO . closeTerm) f
 -- If it uses terminal-style interaction, 'Prefs' will be read from the
 -- user's @~/.haskeline@ file (if present).
 -- If it uses file-style interaction, 'Prefs' are not relevant and will not be read.
-runInputTBehavior :: (MonadIO m, MonadMask m) => Behavior -> Settings m -> InputT m a -> m a
+runInputTBehavior :: (MonadIO m, MonadMask m) => Behavior m -> Settings m -> InputT m a -> m a
 runInputTBehavior behavior settings f = withBehavior behavior $ \run -> do
     prefs <- if isTerminalStyle run
                 then liftIO readPrefsFromHome
@@ -170,7 +265,7 @@ runInputTBehavior behavior settings f = withBehavior behavior $ \run -> do
 
 -- | Run a line-reading application.
 runInputTBehaviorWithPrefs :: (MonadIO m, MonadMask m)
-    => Behavior -> Prefs -> Settings m -> InputT m a -> m a
+    => Behavior m -> Prefs -> Settings m -> InputT m a -> m a
 runInputTBehaviorWithPrefs behavior prefs settings f
     = withBehavior behavior $ flip (execInputT prefs settings) f
 
@@ -195,15 +290,15 @@ mapInputT f = InputT . mapReaderT (mapReaderT (mapReaderT
 -- file-style interaction.
 --
 -- This behavior should suffice for most applications.  
-defaultBehavior :: Behavior
+defaultBehavior :: Behavior m
 defaultBehavior = Behavior defaultRunTerm
 
 -- | Use file-style interaction, reading input from the given 'Handle'.  
-useFileHandle :: Handle -> Behavior
+useFileHandle :: Handle -> Behavior m
 useFileHandle = Behavior . fileHandleRunTerm
 
 -- | Use file-style interaction, reading input from the given file.
-useFile :: FilePath -> Behavior
+useFile :: FilePath -> Behavior m
 useFile file = Behavior $ do
             h <- openBinaryFile file ReadMode
             rt <- fileHandleRunTerm h
@@ -213,7 +308,7 @@ useFile file = Behavior $ do
 -- terminals.
 --
 -- If it cannot open the user's terminal, use file-style interaction, reading input from 'stdin'.
-preferTerm :: Behavior
+preferTerm :: Behavior m 
 preferTerm = Behavior terminalRunTerm
 
 

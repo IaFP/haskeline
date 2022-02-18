@@ -58,7 +58,7 @@ data RunTerm = RunTerm {
 data TermOps = TermOps
     { getLayout :: IO Layout
     , withGetEvent :: forall m a . CommandMonad m => (m Event -> m a) -> m a
-    , evalTerm :: forall m . EvalTerm m
+    , evalTerm :: forall m . CommandMonad m => EvalTerm m
     , saveUnusedKeys :: [Key] -> IO ()
     , externalPrint :: String -> IO ()
     }
@@ -122,20 +122,13 @@ instance Exception Interrupt where
 
 
 
-class (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
+class (MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
         => CommandMonad m where
     runCompletion :: (String,String) -> m (String,[Completion])
 
-instance {- OVERLAPPABLE -} (
-#if MIN_VERSION_base(4,16,0)
-  Total m, Total2 t, 
-#endif
+instance {-# OVERLAPPABLE #-} (
   MonadTrans t, CommandMonad m, MonadReader Prefs (t m),
-        MonadIO (t m), MonadMask (t m),
+    MonadIO (t m), MonadMask (t m),
         MonadReader Layout (t m))
             => CommandMonad (t m) where
     runCompletion = lift . runCompletion

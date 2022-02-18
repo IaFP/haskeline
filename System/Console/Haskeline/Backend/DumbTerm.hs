@@ -1,3 +1,8 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators, DeriveFunctor, TypeFamilies #-}
+#endif
+
 module System.Console.Haskeline.Backend.DumbTerm where
 
 import System.Console.Haskeline.Backend.Posix
@@ -10,6 +15,10 @@ import System.IO
 import Control.Applicative(Applicative)
 import Control.Monad(liftM)
 import Control.Monad.Catch
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (type (@), Total)
+import qualified Control.Monad.Trans.State.Strict as SS
+#endif
 
 -- TODO: 
 ---- Put "<" and ">" at end of term if scrolls off.
@@ -21,23 +30,94 @@ data Window = Window {pos :: Int -- ^ # of visible chars to left of cursor
 initWindow :: Window
 initWindow = Window {pos=0}
 
+#if MIN_VERSION_base(4,16,0)
+data m @ a => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a} -- PosixT m a = ReaderT Handle m a
+                -- deriving ( Functor
+                         -- , Applicative
+                         -- , Monad
+                         -- , MonadIO,
+                         -- , MonadThrow, MonadCatch
+                         -- , MonadMask,
+                          -- MonadState Window, MonadReader Handles
+                 --        )
+
+instance (Total m, Functor m) => Functor (DumbTerm m) where
+  fmap f (DumbTerm x) = DumbTerm $ fmap f x
+
+instance (Total m, Monad m) => Applicative (DumbTerm m) where
+   pure a = DumbTerm (SS.StateT $ \s -> return (a, s))
+   (DumbTerm f) <*> (DumbTerm a) = DumbTerm (f <*> a)
+
+instance (Total m, Monad m) => Monad (DumbTerm m) where
+   x >>= f = DumbTerm $ do x' <- unDumbTerm x
+                           x'' <- unDumbTerm (f x')
+                           return x''
+
+instance (Total m, MonadIO m) => MonadIO (DumbTerm m) where
+  liftIO = DumbTerm . liftIO
+  
+
+instance (Total m, MonadThrow m) => MonadThrow (DumbTerm m) where
+  throwM = DumbTerm . throwM
+  
+instance (Total m, MonadCatch m) => MonadCatch (DumbTerm m) where
+  catch m f = DumbTerm $ catch (unDumbTerm m) (\e -> unDumbTerm (f e))
+
+instance (Total m, MonadMask m) => MonadMask (DumbTerm m) where
+  mask a = DumbTerm $ mask $ \u -> unDumbTerm (a $ q u)
+    where q :: (StateT Window (PosixT m) a -> StateT Window (PosixT m) a)
+            -> DumbTerm m a -> DumbTerm m a
+          q u (DumbTerm b) = DumbTerm $ u b
+  uninterruptibleMask a = DumbTerm $ uninterruptibleMask $ \u -> unDumbTerm (a $ q u)
+    where q :: (StateT Window (PosixT m) a -> StateT Window (PosixT m) a)
+            -> DumbTerm m a -> DumbTerm m a
+          q u (DumbTerm b) = DumbTerm $ u b
+  generalBracket acquire release use = mask $ \unmasked -> do
+    resource <- acquire
+    b <- unmasked (use resource) `catch` \e ->
+      do _ <- release resource (ExitCaseException e)
+         throwM e
+    c <- release resource (ExitCaseSuccess b)
+    return (b, c)
+
+instance (Total m, Monad m) => MonadState Window (DumbTerm m) where
+  get   = DumbTerm $ SS.state (\s -> (s, s))
+  put s = DumbTerm $ SS.state (\_ -> ((), s))
+
+instance (Total m, Monad m) => MonadReader Handles (DumbTerm m) where
+  ask = DumbTerm $ Monads.ask
+
+#else
 newtype DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a}
                 deriving (Functor, Applicative, Monad, MonadIO,
                           MonadThrow, MonadCatch, MonadMask,
                           MonadState Window, MonadReader Handles)
+#endif
 
-type DumbTermM a = forall m . (MonadIO m, MonadReader Layout m) => DumbTerm m a
+type DumbTermM a = forall m . (
+#if MIN_VERSION_base(4,16,0)
+               Total m,
+#endif
+               MonadIO m, MonadReader Layout m) => DumbTerm m a
 
 instance MonadTrans DumbTerm where
     lift = DumbTerm . lift . lift
 
-evalDumb :: (MonadReader Layout m, CommandMonad m) => EvalTerm (PosixT m)
+evalDumb :: (
+#if MIN_VERSION_base(4,16,0)
+              Total m,
+#endif
+              MonadReader Layout m, CommandMonad m) => EvalTerm (PosixT m)
 evalDumb = EvalTerm (evalStateT' initWindow . unDumbTerm) (DumbTerm . lift)
 
 runDumbTerm :: Handles -> MaybeT IO RunTerm
 runDumbTerm h = liftIO $ posixRunTerm h (posixLayouts h) [] id evalDumb
                                 
-instance (MonadIO m, MonadMask m, MonadReader Layout m) => Term (DumbTerm m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+          Total m,
+#endif
+          MonadIO m, MonadMask m, MonadReader Layout m) => Term (DumbTerm m) where
     reposition _ s = refitLine s
     drawLineDiff x y = drawLineDiff' x y
     
@@ -47,7 +127,11 @@ instance (MonadIO m, MonadMask m, MonadReader Layout m) => Term (DumbTerm m) whe
     ringBell True = printText "\a"
     ringBell False = return ()
       
-printText :: MonadIO m => String -> DumbTerm m ()
+printText :: (
+#if MIN_VERSION_base(4,16,0)
+              Total m,
+#endif
+              MonadIO m) => String -> DumbTerm m ()
 printText str = do
     h <- liftM ehOut ask
     liftIO $ hPutStr h str

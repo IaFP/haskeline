@@ -62,7 +62,7 @@ instance (
 
 instance {-# OVERLAPPABLE #-} (
 #if MIN_VERSION_base(4,16,0)
-  Total m, Total2 t,
+  Total m, Total(t m),
 #endif
   MonadReader r m, MonadTrans t, Monad (t m))
     => MonadReader r (t m) where
@@ -109,7 +109,7 @@ instance (
 
 instance {-# OVERLAPPABLE #-} (
 #if MIN_VERSION_base(4,16,0)
-  Total m, Total2 t,
+  Total m, Total (t m),
 #endif
   MonadState s m, MonadTrans t, Monad (t m))
     => MonadState s (t m) where

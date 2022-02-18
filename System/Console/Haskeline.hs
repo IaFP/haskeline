@@ -1,3 +1,8 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
+
 {- |
 
 A rich user interface for line input in command-line programs.  Haskeline is
@@ -95,6 +100,10 @@ import Control.Monad.Catch (MonadMask, handle)
 import Data.Char (isSpace, isPrint)
 import Data.Maybe (isJust)
 import System.IO
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total, type(@))
+#endif
+                                   
 
 
 -- | A useful default.  In particular:
@@ -221,11 +230,19 @@ getPrintableChar fops = do
         Just False -> getPrintableChar fops
         _ -> return c
 
-getInputCmdChar :: (MonadIO m, MonadMask m) => TermOps -> Prefix -> InputT m (Maybe Char)
+getInputCmdChar :: (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+  MonadIO m, MonadMask m) => TermOps -> Prefix -> InputT m (Maybe Char)
 getInputCmdChar tops prefix = runInputCmdT tops
         $ runCommandLoop tops prefix acceptOneChar emptyIM
 
-acceptOneChar :: Monad m => KeyCommand m InsertMode (Maybe Char)
+acceptOneChar :: (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+    Monad m) => KeyCommand m InsertMode (Maybe Char)
 acceptOneChar = choiceCmd [useChar $ \c s -> change (insertChar c) s
                                                 >> return (Just c)
                           , ctrlChar 'l' +> clearScreenCmd >|>

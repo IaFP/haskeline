@@ -20,14 +20,15 @@ import GHC.Types (Total, type(@))
 
 runCommandLoop :: forall m s a . (CommandMonad m, MonadState Layout m, LineState s)
     => TermOps -> Prefix -> KeyCommand m s a -> s -> m a
-runCommandLoop tops@TermOps{evalTerm = e@(EvalTerm eval liftE), withGetEvent = wge} prefix cmds initState
-    = -- case e of -- NB: Need to separate this case out from the above pattern
+runCommandLoop tops -- @TermOps{evalTerm = e@(EvalTerm eval liftE), withGetEvent = wge}
+                   prefix cmds initState
+    = error "not so soon smarty pants" -- case e of -- NB: Need to separate this case out from the above pattern
                 -- in order to build on ghc-6.12.3
         -- EvalTerm eval liftE ->
-         eval (wge helper)
-           where
-             helper :: forall m. m Event -> m a
-             helper = runCommandLoop' liftE tops prefix initState cmds
+         -- eval helper -- (wge helper)
+         --   where
+         --     -- helper :: forall m. m Event -> m a
+         --     helper = undefined -- runCommandLoop' liftE tops prefix initState cmds
     
   
 runCommandLoop' :: forall m n s a . (
