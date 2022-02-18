@@ -1,3 +1,8 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators, UndecidableSuperClasses #-}
+#endif
+
 module System.Console.Haskeline.Term where
 
 import System.Console.Haskeline.Monads
@@ -24,6 +29,9 @@ import Control.Monad(liftM,when,guard)
 import System.IO.Error (isEOFError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total, type(@), Total2)
+#endif
 
 class (MonadReader Layout m, MonadIO m, MonadMask m) => Term m where
     reposition :: Layout -> LineChars -> m ()
@@ -50,7 +58,7 @@ data RunTerm = RunTerm {
 data TermOps = TermOps
     { getLayout :: IO Layout
     , withGetEvent :: forall m a . CommandMonad m => (m Event -> m a) -> m a
-    , evalTerm :: forall m . CommandMonad m => EvalTerm m
+    , evalTerm :: forall m . EvalTerm m
     , saveUnusedKeys :: [Key] -> IO ()
     , externalPrint :: String -> IO ()
     }
@@ -94,10 +102,16 @@ isTerminalStyle r = case termOps r of
 -- Generic terminal actions which are independent of the Term being used.
 data EvalTerm m
     = forall n . (Term n, CommandMonad n)
-            => EvalTerm (forall a . n a -> m a) (forall a . m a -> n a)
+            => EvalTerm (forall a . n a -> m a)
+                        (forall a . m a -> n a)
 
-mapEvalTerm :: (forall a . n a -> m a) -> (forall a . m a -> n a)
-        -> EvalTerm n -> EvalTerm m
+mapEvalTerm :: (
+#if MIN_VERSION_base(4,16,0)
+               Total m, Total n,
+#endif
+               CommandMonad m, CommandMonad n)
+            => (forall a . n a -> m a) -> (forall a . m a -> n a)
+            -> EvalTerm n -> EvalTerm m
 mapEvalTerm eval liftE (EvalTerm eval' liftE')
     = EvalTerm (eval . eval') (liftE' . liftE)
 
@@ -108,11 +122,19 @@ instance Exception Interrupt where
 
 
 
-class (MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
+class (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
         => CommandMonad m where
     runCompletion :: (String,String) -> m (String,[Completion])
 
-instance {-# OVERLAPPABLE #-} (MonadTrans t, CommandMonad m, MonadReader Prefs (t m),
+instance {- OVERLAPPABLE -} (
+#if MIN_VERSION_base(4,16,0)
+  Total m, Total2 t, 
+#endif
+  MonadTrans t, CommandMonad m, MonadReader Prefs (t m),
         MonadIO (t m), MonadMask (t m),
         MonadReader Layout (t m))
             => CommandMonad (t m) where

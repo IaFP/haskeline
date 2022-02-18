@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE NoPartialTypeConstructors, QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
 module System.Console.Haskeline.RunCommand (runCommandLoop) where
 
 import System.Console.Haskeline.Command
@@ -10,18 +14,25 @@ import System.Console.Haskeline.Key
 import Control.Exception (SomeException)
 import Control.Monad
 import Control.Monad.Catch (handle, throwM)
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total, type(@))
+#endif
 
-runCommandLoop :: (CommandMonad m, MonadState Layout m, LineState s)
+runCommandLoop :: forall m s a . (CommandMonad m, MonadState Layout m, LineState s)
     => TermOps -> Prefix -> KeyCommand m s a -> s -> m a
-runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
-    = case e of -- NB: Need to separate this case out from the above pattern
+runCommandLoop tops@TermOps{evalTerm = e@(EvalTerm eval liftE), withGetEvent = wge} prefix cmds initState
+    = -- case e of -- NB: Need to separate this case out from the above pattern
                 -- in order to build on ghc-6.12.3
-        EvalTerm eval liftE
-            -> eval $ withGetEvent tops
-                $ runCommandLoop' liftE tops prefix initState
-                    cmds 
-
-runCommandLoop' :: forall m n s a . (Term n, CommandMonad n,
+        -- EvalTerm eval liftE ->
+         eval (wge helper)
+           where
+             helper :: forall m. m Event -> m a
+             helper = runCommandLoop' liftE tops prefix initState cmds
+    
+  
+runCommandLoop' :: forall m n s a . (
+  Total m, Total n,
+  Term n, CommandMonad n,
         MonadState Layout m, LineState s)
         => (forall b . m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
         -> n a
@@ -30,7 +41,7 @@ runCommandLoop' liftE tops prefix initState cmds getEvent = do
     drawLine s
     readMoreKeys s (fmap (liftM (\x -> (x,[])) . ($ initState)) cmds)
   where
-    readMoreKeys :: LineChars -> KeyMap (CmdM m (a,[Key])) -> n a
+    readMoreKeys :: Total m => LineChars -> KeyMap (CmdM m (a,[Key])) -> n a
     readMoreKeys s next = do
         event <- handle (\(e::SomeException) -> moveToNextLine s >> throwM e)
                     getEvent
@@ -45,8 +56,9 @@ runCommandLoop' liftE tops prefix initState cmds getEvent = do
                     ExternalPrint str -> do
                         printPreservingLineChars s str
                         readMoreKeys s next
-
-    loopCmd :: LineChars -> CmdM m (a,[Key]) -> n a
+#if MIN_VERSION_base(4,16,0)
+    loopCmd :: Total m => LineChars -> CmdM m (a,[Key]) -> n a
+#endif
     loopCmd s (GetKey next) = readMoreKeys s next
     -- If there are multiple consecutive LineChanges, only render the diff
     -- to the last one, and skip the rest. This greatly improves speed when
@@ -106,7 +118,11 @@ actBell = do
 -- Traverse through the tree of keybindings, using the given keys.
 -- Remove as many GetKeys as possible.
 -- Returns any unused keys (so that they can be applied at the next getInputLine).
-applyKeysToMap :: Monad m => [Key] -> KeyMap (CmdM m (a,[Key]))
+applyKeysToMap :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => [Key] -> KeyMap (CmdM m (a,[Key]))
                                 -> CmdM m (a,[Key])
 applyKeysToMap [] next = GetKey next
 applyKeysToMap (k:ks) next = case lookupKM next k of
@@ -114,7 +130,11 @@ applyKeysToMap (k:ks) next = case lookupKM next k of
     Just (Consumed cmd) -> applyKeysToCmd ks cmd
     Just (NotConsumed cmd) -> applyKeysToCmd (k:ks) cmd
 
-applyKeysToCmd :: Monad m => [Key] -> CmdM m (a,[Key])
+applyKeysToCmd :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => [Key] -> CmdM m (a,[Key])
                                 -> CmdM m (a,[Key])
 applyKeysToCmd ks (GetKey next) = applyKeysToMap ks next
 applyKeysToCmd ks (DoEffect e next) = DoEffect e (applyKeysToCmd ks next)

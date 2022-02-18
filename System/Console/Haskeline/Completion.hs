@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Completion(
                             CompletionFunc,
                             Completion(..),
@@ -23,6 +27,9 @@ import Control.Monad(forM)
 
 import System.Console.Haskeline.Directory
 import System.Console.Haskeline.Monads
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total)
+#endif
 
 -- | Performs completions from the given line state.
 --

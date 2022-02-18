@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators, UndecidableSuperClasses #-}
+#endif
 module System.Console.Haskeline.Monads(
                 MonadTrans(..),
                 MonadIO(..),
@@ -29,26 +33,53 @@ import Control.Monad.Trans.Reader hiding (ask,asks)
 import qualified Control.Monad.Trans.Reader as Reader
 import Control.Monad.Trans.State.Strict hiding (get, put, gets, modify)
 import qualified Control.Monad.Trans.State.Strict as State
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (type(@), Total, Total2)
+#endif
 
 import Data.IORef
 
-class Monad m => MonadReader r m where
+class (
+#if MIN_VERSION_base(4,16,0)
+  m @ (),
+#endif
+  Monad m) => MonadReader r m where
     ask :: m r
 
-instance Monad m => MonadReader r (ReaderT r m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadReader r (ReaderT r m) where
     ask = Reader.ask
 
-instance Monad m => MonadReader s (StateT s m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadReader s (StateT s m) where
     ask = get
 
-instance {-# OVERLAPPABLE #-} (MonadReader r m, MonadTrans t, Monad (t m))
+instance {-# OVERLAPPABLE #-} (
+#if MIN_VERSION_base(4,16,0)
+  Total m, Total2 t,
+#endif
+  MonadReader r m, MonadTrans t, Monad (t m))
     => MonadReader r (t m) where
     ask = lift ask
 
-asks :: MonadReader r m => (r -> a) -> m a
+asks :: (
+#if MIN_VERSION_base(4,16,0)
+  m @ r,
+#endif
+  MonadReader r m) => (r -> a) -> m a
 asks f = liftM f ask
 
-class Monad m => MonadState s m where
+class (
+#if MIN_VERSION_base(4,16,0)
+  m @ s, m @ (),
+#endif
+  Monad m) => MonadState s m where
     get :: m s
     put :: s -> m ()
 
@@ -68,11 +99,19 @@ update f = do
 runReaderT' :: r -> ReaderT r m a -> m a
 runReaderT' = flip runReaderT
 
-instance Monad m => MonadState s (StateT s m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadState s (StateT s m) where
     get = State.get
     put x = State.put $! x
 
-instance {-# OVERLAPPABLE #-} (MonadState s m, MonadTrans t, Monad (t m))
+instance {-# OVERLAPPABLE #-} (
+#if MIN_VERSION_base(4,16,0)
+  Total m, Total2 t,
+#endif
+  MonadState s m, MonadTrans t, Monad (t m))
     => MonadState s (t m) where
     get = lift get
     put = lift . put

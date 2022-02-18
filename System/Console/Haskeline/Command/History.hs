@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Command.History where
 
 import System.Console.Haskeline.LineState
@@ -10,6 +14,9 @@ import Data.Maybe(fromMaybe)
 import System.Console.Haskeline.History
 import Data.IORef
 import Control.Monad.Catch
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total)
+#endif
 
 data HistLog = HistLog {pastHistory, futureHistory :: [[Grapheme]]}
                     deriving Show
@@ -54,19 +61,35 @@ firstHistory s h = let prevs = (listSave s,h):prevHistories (listSave s) h
                        (s',h') = last prevs
                    in (listRestore s',h')
 
-historyBack, historyForward :: (Save s, MonadState HistLog m) => Command m s s
+historyBack, historyForward :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Save s, MonadState HistLog m) => Command m s s
 historyBack = simpleCommand $ histUpdate prevHistory
 historyForward = simpleCommand $ reverseHist . histUpdate prevHistory
 
-historyStart, historyEnd :: (Save s, MonadState HistLog m) => Command m s s
+historyStart, historyEnd :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Save s, MonadState HistLog m) => Command m s s
 historyStart = simpleCommand $ histUpdate firstHistory
 historyEnd = simpleCommand $ reverseHist . histUpdate firstHistory
 
-histUpdate :: MonadState HistLog m => (s -> HistLog -> (t,HistLog))
+histUpdate :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadState HistLog m) => (s -> HistLog -> (t,HistLog))
                         -> s -> m (Either Effect t)
 histUpdate f = liftM Right . update . f
 
-reverseHist :: MonadState HistLog m => m b -> m b
+reverseHist :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadState HistLog m) => m b -> m b
 reverseHist f = do
     modify reverser
     y <- f
@@ -136,7 +159,11 @@ searchBackwards useCurrent s h = let
     hists' = if useCurrent then (saveSM s,h):hists else hists
     in searchHistories (direction s) text hists'
 
-doSearch :: MonadState HistLog m => Bool -> SearchMode -> m (Either Effect SearchMode)
+doSearch :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadState HistLog m) => Bool -> SearchMode -> m (Either Effect SearchMode)
 doSearch useCurrent sm = case direction sm of
     Reverse -> searchHist
     Forward -> reverseHist searchHist
@@ -147,7 +174,11 @@ doSearch useCurrent sm = case direction sm of
             Just (sm',hist') -> put hist' >> return (Right sm')
             Nothing -> return $ Left RingBell
 
-searchHistory :: MonadState HistLog m => KeyCommand m InsertMode InsertMode
+searchHistory :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadState HistLog m) => KeyCommand m InsertMode InsertMode
 searchHistory = choiceCmd [
             metaChar 'j' +> searchForPrefix Forward
             , metaChar 'k' +> searchForPrefix Reverse
@@ -170,11 +201,23 @@ searchHistory = choiceCmd [
                             ]
         delLastChar s = s {searchTerm = minit (searchTerm s)}
         minit xs = if null xs then [] else init xs
+#if MIN_VERSION_base(4,16,0)
+        oneMoreChar :: (Total m, MonadState HistLog m) =>
+                                  Char -> SearchMode -> m (Either Effect SearchMode)
+#endif
         oneMoreChar c = doSearch True . addChar c
+#if MIN_VERSION_base(4,16,0)
+        searchMore :: (Total m, MonadState HistLog m) =>
+                                 Direction -> SearchMode -> m (Either Effect SearchMode)
+#endif
         searchMore d s = doSearch False s {direction=d}
 
 
-searchForPrefix :: MonadState HistLog m => Direction
+searchForPrefix :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadState HistLog m) => Direction
                     -> Command m InsertMode InsertMode
 searchForPrefix dir s@(IMode xs _) = do
     next <- findFirst prefixed dir s
@@ -189,7 +232,11 @@ searchForPrefix dir s@(IMode xs _) = do
 -- If it succeeds, the HistLog is updated and the result is returned.
 -- If it fails, the HistLog is unchanged.
 -- TODO: make the other history searching functions use this instead.
-findFirst :: forall s m . (Save s, MonadState HistLog m)
+findFirst :: forall s m . (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Save s, MonadState HistLog m)
     => ([Grapheme] -> Maybe s) -> Direction -> s -> m (Maybe s)
 findFirst cond Forward s = reverseHist $ findFirst cond Reverse s
 findFirst cond Reverse s = do

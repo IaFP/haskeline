@@ -1,4 +1,8 @@
 {-# LANGUAGE CApiFFI #-}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
 
 module System.Console.Haskeline.Backend.Posix (
                         withPosixGetEvent,
@@ -45,6 +49,9 @@ import GHC.IO.Exception
 import GHC.IO.Handle.Types hiding (getState)
 import GHC.IO.Handle.Internals
 import System.Posix.Internals (FD)
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types(Total)
+#endif
 
 #if defined(USE_TERMIOS_H) || defined(__ANDROID__)
 #include <termios.h>
@@ -283,8 +290,8 @@ posixRunTerm ::
     Handles
     -> [IO (Maybe Layout)]
     -> [(String,Key)]
-    -> (forall m b . (MonadIO m, MonadMask m) => m b -> m b)
-    -> (forall m . (MonadMask m, CommandMonad m) => EvalTerm (PosixT m))
+    -> (forall m b . (Total m, MonadIO m, MonadMask m) => m b -> m b)
+    -> (forall m . (Total m, MonadMask m, CommandMonad m) => EvalTerm (PosixT m))
     -> IO RunTerm
 posixRunTerm hs layoutGetters keys wrapGetEvent evalBackend = do
     ch <- newTChanIO

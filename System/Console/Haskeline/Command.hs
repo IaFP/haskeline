@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Command(
                         -- * Commands
                         Effect(..),
@@ -34,6 +38,9 @@ import Control.Monad(ap, mplus, liftM)
 import Control.Monad.Trans.Class
 import System.Console.Haskeline.LineState
 import System.Console.Haskeline.Key
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total, type(@))
+#endif
 
 data Effect = LineChange (Prefix -> LineChars)
               | PrintLines [String]
@@ -57,19 +64,31 @@ instance Functor KeyConsumed where
 
 data CmdM m a   = GetKey (KeyMap (CmdM m a))
                 | DoEffect Effect (CmdM m a)
-                | CmdM (m (CmdM m a))
+                | m @ CmdM m a => CmdM (m (CmdM m a))
                 | Result a
 
 type Command m s t = s -> CmdM m t
 
-instance Monad m => Functor (CmdM m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Functor (CmdM m) where
     fmap = liftM
 
-instance Monad m => Applicative (CmdM m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Applicative (CmdM m) where
     pure  = Result
     (<*>) = ap
 
-instance Monad m => Monad (CmdM m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Monad (CmdM m) where
     return = pure
 
     GetKey km >>= g = GetKey $ fmap (>>= g) km
@@ -106,33 +125,57 @@ choiceCmd = foldl orKM nullKM
         nullKM = KeyMap $ const Nothing
         orKM (KeyMap f) (KeyMap g) = KeyMap $ \k -> f k `mplus` g k
 
-keyChoiceCmd :: [KeyCommand m s t] -> Command m s t
+keyChoiceCmd ::
+#if MIN_VERSION_base(4,16,0)
+  Total m => 
+#endif
+  [KeyCommand m s t] -> Command m s t
 keyChoiceCmd = keyCommand . choiceCmd
 
 keyChoiceCmdM :: [KeyMap (CmdM m a)] -> CmdM m a
 keyChoiceCmdM = GetKey . choiceCmd
 
 infixr 6 >|>
-(>|>) :: Monad m => Command m s t -> Command m t u -> Command m s u
+(>|>) :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Command m s t -> Command m t u -> Command m s u
 f >|> g = \x -> f x >>= g
 
 infixr 6 >+>
-(>+>) :: Monad m => KeyCommand m s t -> Command m t u -> KeyCommand m s u
+(>+>) :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => KeyCommand m s t -> Command m t u -> KeyCommand m s u
 km >+> g = fmap (>|> g) km
 
 -- attempt to run the command (predicated on getting a valid key); but if it fails, just keep
 -- going.
-try :: Monad m => KeyCommand m s s -> Command m s s
+try :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => KeyCommand m s s -> Command m s s
 try f = keyChoiceCmd [f,withoutConsuming return]
 
 infixr 6 +>
 (+>) :: Key -> a -> KeyMap a
 (+>) = useKey
 
-finish :: (Monad m, Result s) => Command m s (Maybe String)
+finish :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m, Result s) => Command m s (Maybe String)
 finish = return . Just . toResult
 
-failCmd :: Monad m => Command m s (Maybe a)
+failCmd :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Command m s (Maybe a)
 failCmd _ = return Nothing
 
 effect :: Effect -> CmdM m ()
@@ -141,7 +184,11 @@ effect e = DoEffect e $ Result ()
 clearScreenCmd :: Command m s s
 clearScreenCmd = DoEffect ClearScreen . Result
 
-simpleCommand :: (LineState s, Monad m) => (s -> m (Either Effect s))
+simpleCommand :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  LineState s, Monad m) => (s -> m (Either Effect s))
         -> Command m s s
 simpleCommand f = \s -> do
     et <- lift (f s)
@@ -149,18 +196,38 @@ simpleCommand f = \s -> do
         Left e -> effect e >> return s
         Right t -> setState t
 
-charCommand :: (LineState s, Monad m) => (Char -> s -> m (Either Effect s))
+charCommand :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  LineState s, Monad m) => (Char -> s -> m (Either Effect s))
                     -> KeyCommand m s s
 charCommand f = useChar $ simpleCommand . f
 
-setState :: (Monad m, LineState s) => Command m s s
+setState :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m, LineState s) => Command m s s
 setState s = effect (lineChange s) >> return s
 
-change :: (LineState t, Monad m) => (s -> t) -> Command m s t
+change :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  LineState t, Monad m) => (s -> t) -> Command m s t
 change = (setState .)
 
-changeFromChar :: (LineState t, Monad m) => (Char -> s -> t) -> KeyCommand m s t
+changeFromChar :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  LineState t, Monad m) => (Char -> s -> t) -> KeyCommand m s t
 changeFromChar f = useChar $ change . f
 
-doBefore :: Monad m => Command m s t -> KeyCommand m t u -> KeyCommand m s u
+doBefore :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Command m s t -> KeyCommand m t u -> KeyCommand m s u
 doBefore cmd = fmap (cmd >|>)

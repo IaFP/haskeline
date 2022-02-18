@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
 module System.Console.Haskeline.Command.Completion(
                             CompletionFunc,
                             Completion,
@@ -14,6 +18,9 @@ import System.Console.Haskeline.LineState
 import System.Console.Haskeline.Prefs
 import System.Console.Haskeline.Completion
 import System.Console.Haskeline.Monads
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types (Total)
+#endif
 
 import Data.List(transpose, unfoldr)
 
@@ -42,7 +49,11 @@ completionCmd k = k +> saveForUndo >|> \oldIM -> do
         [c] -> setState $ useCompletion rest c
         _ -> presentCompletions k oldIM rest cs
 
-presentCompletions :: (MonadReader Prefs m, MonadReader Layout m)
+presentCompletions :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadReader Prefs m, MonadReader Layout m)
         => Key -> InsertMode -> InsertMode
             -> [Completion] -> CmdM m InsertMode
 presentCompletions k oldIM rest cs = do
@@ -55,9 +66,16 @@ presentCompletions k oldIM rest cs = do
                 then return withPartial
                 else pagingCompletion k prefs cs withPartial
 
-menuCompletion :: Monad m => Key -> [InsertMode] -> Command m InsertMode InsertMode
+menuCompletion :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Key -> [InsertMode] -> Command m InsertMode InsertMode
 menuCompletion k = loop
     where
+#if MIN_VERSION_base(4,16,0)
+        loop :: (Total m1, Monad m1, LineState s) => [s] -> Command m1 s s
+#endif
         loop [] = setState
         loop (c:cs) = change (const c) >|> try (k +> loop cs)
 
@@ -68,7 +86,11 @@ makePartialCompletion im completions = insertString partial im
     commonPrefix (c:cs) (d:ds) | c == d = c : commonPrefix cs ds
     commonPrefix _ _ = ""
 
-pagingCompletion :: MonadReader Layout m => Key -> Prefs
+pagingCompletion :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadReader Layout m) => Key -> Prefs
                 -> [Completion] -> Command m InsertMode InsertMode
 pagingCompletion k prefs completions = \im -> do
         ls <- asks $ makeLines (map display completions)
@@ -82,7 +104,11 @@ pagingCompletion k prefs completions = \im -> do
             then pageAction
             else effect RingBell >> try (k +> const pageAction) im
 
-askFirst :: Monad m => Prefs -> Int -> CmdM m ()
+askFirst :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Prefs -> Int -> CmdM m ()
             -> CmdM m ()
 askFirst prefs n cmd
     | maybe False (< n) (completionPromptLimit prefs) = do
@@ -94,7 +120,11 @@ askFirst prefs n cmd
             ]
     | otherwise = cmd
 
-pageCompletions :: MonadReader Layout m => [String] -> CmdM m ()
+pageCompletions :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadReader Layout m) => [String] -> CmdM m ()
 pageCompletions [] = return ()
 pageCompletions wws@(w:ws) = do
     _ <- setState $ Message "----More----"
@@ -108,7 +138,11 @@ pageCompletions wws@(w:ws) = do
     oneLine = clearMessage >> effect (PrintLines [w]) >> pageCompletions ws
     clearMessage = effect $ LineChange $ const ([],[])
 
-printPage :: MonadReader Layout m => [String] -> CmdM m ()
+printPage :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadReader Layout m) => [String] -> CmdM m ()
 printPage ls = do
     layout <- ask
     let (ps,rest) = splitAt (height layout - 1) ls
