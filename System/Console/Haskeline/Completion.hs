@@ -28,7 +28,7 @@ import Control.Monad(forM)
 import System.Console.Haskeline.Directory
 import System.Console.Haskeline.Monads
 #if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total)
+import GHC.Types (Total, type(@))
 #endif
 
 -- | Performs completions from the given line state.
@@ -122,7 +122,11 @@ filenameWordBreakChars :: String
 filenameWordBreakChars = " \t\n`@$><=;|&{("
 
 -- A completion command for file and folder names.
-completeFilename :: MonadIO m => CompletionFunc m
+completeFilename :: (
+#if MIN_VERSION_base(4,16,0)
+  m @ [Completion],
+#endif
+  MonadIO m) => CompletionFunc m
 completeFilename  = completeQuotedWord (Just '\\') "\"'" listFiles
                         $ completeWord (Just '\\') ("\"\'" ++ filenameWordBreakChars)
                                 listFiles

@@ -15,7 +15,7 @@ import System.Console.Haskeline.History
 import Data.IORef
 import Control.Monad.Catch
 #if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total)
+import GHC.Types (Total, type(@))
 #endif
 
 data HistLog = HistLog {pastHistory, futureHistory :: [[Grapheme]]}
@@ -35,7 +35,11 @@ histLog :: History -> HistLog
 histLog hist = HistLog {pastHistory = map stringToGraphemes $ historyLines hist,
                         futureHistory = []}
 
-runHistoryFromFile :: (MonadIO m, MonadMask m) => Maybe FilePath -> Maybe Int
+runHistoryFromFile :: (
+#if MIN_VERSION_base(4,16,0)
+   m @ (), m @ (a, ()), m @ History, m @ IORef History,
+#endif
+  MonadIO m, MonadMask m) => Maybe FilePath -> Maybe Int
                             -> ReaderT (IORef History) m a -> m a
 runHistoryFromFile Nothing _ f = do
     historyRef <- liftIO $ newIORef emptyHistory

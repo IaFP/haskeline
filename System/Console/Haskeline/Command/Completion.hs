@@ -29,7 +29,11 @@ useCompletion im c = insertString r im
     where r | isFinished c = replacement c ++ " "
             | otherwise = replacement c
 
-askIMCompletions :: CommandMonad m =>
+askIMCompletions :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  CommandMonad m) =>
             Command m InsertMode (InsertMode, [Completion])
 askIMCompletions (IMode xs ys) = do
     (rest, completions) <- lift $ runCompletion (withRev graphemesToString xs,
@@ -40,7 +44,11 @@ askIMCompletions (IMode xs ys) = do
     withRev f = reverse . f . reverse
 
 -- | Create a 'Command' for word completion.
-completionCmd :: (MonadState Undo m, CommandMonad m)
+completionCmd :: (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+  MonadState Undo m, CommandMonad m)
                 => Key -> KeyCommand m InsertMode InsertMode
 completionCmd k = k +> saveForUndo >|> \oldIM -> do
     (rest,cs) <- askIMCompletions oldIM

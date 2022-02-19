@@ -11,7 +11,7 @@ import System.Console.Haskeline.Command.Undo
 import Control.Monad
 import Data.IORef
 #if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total)
+import GHC.Types (Total, type(@))
 #endif
 -- standard trick for a purely functional queue:
 data Stack a = Stack [a] [a]
@@ -35,7 +35,11 @@ push x (Stack xs ys) = Stack (x:xs) ys
 
 type KillRing = Stack [Grapheme]
 
-runKillRing :: MonadIO m => ReaderT (IORef KillRing) m a -> m a
+runKillRing :: (
+#if MIN_VERSION_base(4,16,0)
+  m @ IORef (Stack [Grapheme]),
+#endif
+  MonadIO m) => ReaderT (IORef KillRing) m a -> m a
 runKillRing act = do
     ringRef <- liftIO $ newIORef emptyStack
     runReaderT act ringRef

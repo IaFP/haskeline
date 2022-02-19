@@ -33,7 +33,11 @@ import qualified Data.ByteString.Char8 as BC
 import GHC.Types (Total, type(@), Total2)
 #endif
 
-class (MonadReader Layout m, MonadIO m, MonadMask m) => Term m where
+class (
+#if MIN_VERSION_base(4,16,0)
+  m @ (),
+#endif
+  MonadReader Layout m, MonadIO m, MonadMask m) => Term m where
     reposition :: Layout -> LineChars -> m ()
     moveToNextLine :: LineChars -> m ()
     printLines :: [String] -> m ()
@@ -50,15 +54,27 @@ data RunTerm = RunTerm {
             -- | Write unicode characters to stdout.
             putStrOut :: String -> IO (),
             termOps :: Either TermOps FileOps,
-            wrapInterrupt :: forall a m . (MonadIO m, MonadMask m) => m a -> m a,
+            wrapInterrupt :: forall a m . (
+#if MIN_VERSION_base(4,16,0)
+              Total m,
+#endif
+                MonadIO m, MonadMask m) => m a -> m a,
             closeTerm :: IO ()
     }
 
 -- | Operations needed for terminal-style interaction.
 data TermOps = TermOps
     { getLayout :: IO Layout
-    , withGetEvent :: forall m a . CommandMonad m => (m Event -> m a) -> m a
-    , evalTerm :: forall m . CommandMonad m => EvalTerm m
+    , withGetEvent :: forall m a . (
+#if MIN_VERSION_base(4,16,0)
+        Total m,
+#endif
+        CommandMonad m) => (m Event -> m a) -> m a
+    , evalTerm :: forall m . (
+#if MIN_VERSION_base(4,16,0)
+                             Total m,
+#endif
+                             CommandMonad m) => EvalTerm m
     , saveUnusedKeys :: [Key] -> IO ()
     , externalPrint :: String -> IO ()
     }
@@ -84,7 +100,11 @@ flushEventQueue print' eventChan = yield >> loopUntilFlushed
 -- Backends can assume that getLocaleLine, getLocaleChar and maybeReadNewline
 -- are "wrapped" by wrapFileInput.
 data FileOps = FileOps {
-            withoutInputEcho :: forall m a . (MonadIO m, MonadMask m) => m a -> m a,
+            withoutInputEcho :: forall m a . (
+#if MIN_VERSION_base(4,16,0)
+               Total m,
+#endif
+                MonadIO m, MonadMask m) => m a -> m a,
             -- ^ Perform an action without echoing input.
             wrapFileInput :: forall a . IO a -> IO a,
             getLocaleLine :: MaybeT IO String,
@@ -101,7 +121,8 @@ isTerminalStyle r = case termOps r of
 -- Specific, hidden terminal action type
 -- Generic terminal actions which are independent of the Term being used.
 data EvalTerm m
-    = forall n . (Term n, CommandMonad n)
+    = forall n . (
+      Term n, CommandMonad n)
             => EvalTerm (forall a . n a -> m a)
                         (forall a . m a -> n a)
 
@@ -122,11 +143,18 @@ instance Exception Interrupt where
 
 
 
-class (MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
+class (
+#if MIN_VERSION_base(4,16,0)
+  m @ (String, [Completion]),
+#endif
+  MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
         => CommandMonad m where
     runCompletion :: (String,String) -> m (String,[Completion])
 
 instance {-# OVERLAPPABLE #-} (
+#if MIN_VERSION_base(4,16,0)
+  Total m, Total (t m), -- t m @ (String, [Completion]), m @ t m (String, [Completion]),
+#endif
   MonadTrans t, CommandMonad m, MonadReader Prefs (t m),
     MonadIO (t m), MonadMask (t m),
         MonadReader Layout (t m))
@@ -176,14 +204,22 @@ data Layout = Layout {width, height :: Int}
 -- Utility functions for the various backends.
 
 -- | Utility function since we're not using the new IO library yet.
-hWithBinaryMode :: (MonadIO m, MonadMask m) => Handle -> m a -> m a
+hWithBinaryMode :: (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+  MonadIO m, MonadMask m) => Handle -> m a -> m a
 hWithBinaryMode h = bracket (liftIO $ hGetEncoding h)
                         (maybe (return ()) (liftIO . hSetEncoding h))
                         . const . (liftIO (hSetBinaryMode h True) >>)
 
 -- | Utility function for changing a property of a terminal for the duration of
 -- a computation.
-bracketSet :: (MonadMask m, MonadIO m) => IO a -> (a -> IO ()) -> a -> m b -> m b
+bracketSet :: (
+#if MIN_VERSION_base(4,16,0)
+    m @ a, m @ (), m @ (b, ()),
+#endif
+  MonadMask m, MonadIO m) => IO a -> (a -> IO ()) -> a -> m b -> m b
 bracketSet getState set newState f = bracket (liftIO getState)
                             (liftIO . set)
                             (\_ -> liftIO (set newState) >> f)

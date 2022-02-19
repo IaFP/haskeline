@@ -64,7 +64,7 @@ instance Functor KeyConsumed where
 
 data CmdM m a   = GetKey (KeyMap (CmdM m a))
                 | DoEffect Effect (CmdM m a)
-                | m @ CmdM m a => CmdM (m (CmdM m a))
+                | CmdM (m (CmdM m a))
                 | Result a
 
 type Command m s t = s -> CmdM m t

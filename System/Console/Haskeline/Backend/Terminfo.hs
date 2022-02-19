@@ -112,7 +112,15 @@ lookupCells (TermRows rc _) r = Map.findWithDefault 0 r rc
 
 
 #if MIN_VERSION_base(4,16,0)
-data m @ a => Draw m a = Draw {unDraw :: (ReaderT Actions
+data (m @ a
+     , m @ ReaderT Handles m a
+     , m @ StateT TermPos (PosixT m) a
+     , m @ (a, TermPos)
+     , m @ (StateT TermRows (StateT TermPos (PosixT m)) a, TermPos)
+     , m @ ((ReaderT Terminal (StateT TermRows (StateT TermPos (PosixT m))) a, TermRows),TermPos)
+     , m @ ((a, TermRows), TermPos)
+     , m @ ((ReaderT Actions (ReaderT Terminal (StateT TermRows (StateT TermPos (PosixT m)))) a, TermRows), TermPos)
+     ) => Draw m a = Draw {unDraw :: (ReaderT Actions
                                             (ReaderT Terminal
                                              (StateT TermRows
                                               (StateT TermPos
@@ -133,31 +141,59 @@ liftReaderT :: m a -> ReaderT r m a
 liftReaderT m = R.ReaderT (const m)
 {-# INLINE liftReaderT #-}
 
-instance (Total m, Functor m) => Functor (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Functor m) => Functor (Draw m) where
   fmap f (Draw x) = Draw $ fmap f x
   
-instance (Total m, Monad m) => Applicative (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Applicative (Draw m) where
   pure a = Draw ((liftReaderT . pure) a)
   (Draw f) <*> (Draw a) = Draw (f <*> a) 
 
-instance (Total m, Monad m) => Monad (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => Monad (Draw m) where
   return = pure 
   m >>= f = Draw $ do m' <- unDraw m
                       m'' <- unDraw (f m')
                       return m''
 
 
-instance (Total m, MonadIO m) => MonadIO (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m) => MonadIO (Draw m) where
   liftIO = Draw . liftIO
 
-instance (Total m, MonadThrow m) => MonadThrow (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadThrow m) => MonadThrow (Draw m) where
   throwM = Draw . throwM
 
-instance (Total m, MonadCatch m) => MonadCatch (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadCatch m) => MonadCatch (Draw m) where
   catch m f = Draw $ catch (unDraw m) (\e -> unDraw (f e))
 
 
-instance (Total m, MonadMask m) => MonadMask (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadMask m) => MonadMask (Draw m) where
   mask a = Draw $ mask $ \u -> unDraw (a $ q u)
     where q :: ((ReaderT Actions
                   (ReaderT Terminal
@@ -190,21 +226,41 @@ instance (Total m, MonadMask m) => MonadMask (Draw m) where
     c <- release resource (ExitCaseSuccess b)
     return (b, c)
 
-instance (Total m, Monad m) => MonadReader Actions (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadReader Actions (Draw m) where
   ask = Draw ask
 
-instance (Total m, Monad m) => MonadReader Terminal (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadReader Terminal (Draw m) where
   ask = Draw ask
 
-instance (Total m, Monad m) => MonadState TermPos (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadState TermPos (Draw m) where
   get   =  Draw $ do do do { s <- get; return s}
   put s =  Draw $ do do do {put s}
 
-instance (Total m, Monad m) => MonadState TermRows (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadState TermRows (Draw m) where
   get   =  Draw $ do do { s <- get; return s}
   put s =  Draw $ do do {put s} -- Draw $ SS.state (\_ -> ((), s))
 
-instance (Total m, Monad m) => MonadReader Handles (Draw m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  Monad m) => MonadReader Handles (Draw m) where
   ask = Draw ask
 
 #else

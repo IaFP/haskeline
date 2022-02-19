@@ -1,7 +1,21 @@
 {-# LANGUAGE CPP #-}
 #if __GLASGOW_HASKELL__ >= 903
-{-# LANGUAGE NoPartialTypeConstructors, QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators, RankNTypes #-}
 #endif
+{-# LANGUAGE RankNTypes, FlexibleInstances
+             , TypeSynonymInstances
+             , FlexibleContexts, ExistentialQuantification
+             , ScopedTypeVariables, GeneralizedNewtypeDeriving
+             , StandaloneDeriving
+             , MultiParamTypeClasses
+             , UndecidableInstances
+             , ScopedTypeVariables, CPP, DeriveDataTypeable
+             , PatternGuards
+  #-}
+{-# LANGUAGE  QuantifiedConstraints, DatatypeContexts
+           , DefaultSignatures, ConstraintKinds #-}
+{-# LANGUAGE DeriveAnyClass, DataKinds, TypeApplications, UnliftedNewtypes, TypeFamilies, TypeOperators, PolyKinds #-}
+
 module System.Console.Haskeline.RunCommand (runCommandLoop) where
 
 import System.Console.Haskeline.Command
@@ -18,17 +32,21 @@ import Control.Monad.Catch (handle, throwM)
 import GHC.Types (Total, type(@))
 #endif
 
-runCommandLoop :: forall m s a . (CommandMonad m, MonadState Layout m, LineState s)
+runCommandLoop :: (
+#if MIN_VERSION_base(4,16,0)
+                   Total m,
+#endif
+                   CommandMonad m, MonadState Layout m, LineState s
+                  )
     => TermOps -> Prefix -> KeyCommand m s a -> s -> m a
-runCommandLoop tops -- @TermOps{evalTerm = e@(EvalTerm eval liftE), withGetEvent = wge}
-                   prefix cmds initState
-    = error "not so soon smarty pants" -- case e of -- NB: Need to separate this case out from the above pattern
-                -- in order to build on ghc-6.12.3
-        -- EvalTerm eval liftE ->
-         -- eval helper -- (wge helper)
-         --   where
-         --     -- helper :: forall m. m Event -> m a
-         --     helper = undefined -- runCommandLoop' liftE tops prefix initState cmds
+runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
+    = error "not so fast smarty pants"
+
+    -- case e of -- NB: Need to separate this case out from the above pattern
+    --             -- in order to build on ghc-6.12.3
+    --     EvalTerm eval liftE ->
+    --        eval $ withGetEvent tops 
+    --        $ runCommandLoop' liftE tops prefix initState cmds
     
   
 runCommandLoop' :: forall m n s a . (
@@ -81,7 +99,11 @@ printPreservingLineChars s str =  do
     printLines . lines $ str
     drawLine s
 
-drawReposition :: (Term n, MonadState Layout m)
+drawReposition :: (
+#if MIN_VERSION_base(4,16,0)
+  m @ Layout, n @ Layout,
+#endif
+  Term n, MonadState Layout m)
     => (forall a . m a -> n a) -> TermOps -> LineChars -> n ()
 drawReposition liftE tops s = do
     oldLayout <- liftE get
@@ -89,7 +111,11 @@ drawReposition liftE tops s = do
     liftE (put newLayout)
     when (oldLayout /= newLayout) $ reposition oldLayout s
 
-drawEffect :: (Term m, MonadReader Prefs m)
+drawEffect :: (
+#if MIN_VERSION_base(4,16,0)
+  m @ BellStyle, m @ Prefs,
+#endif
+  Term m, MonadReader Prefs m)
     => Prefix -> LineChars -> Effect -> m LineChars
 drawEffect prefix s (LineChange ch) = do
     let t = ch prefix
@@ -106,7 +132,11 @@ drawEffect _ s (PrintLines ls) = do
     return s
 drawEffect _ s RingBell = actBell >> return s
 
-actBell :: (Term m, MonadReader Prefs m) => m ()
+actBell :: (
+#if MIN_VERSION_base(4,16,0)
+  m @ BellStyle, m @ Prefs,
+#endif
+  Term m, MonadReader Prefs m) => m ()
 actBell = do
     style <- asks bellStyle
     case style of

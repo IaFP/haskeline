@@ -113,7 +113,11 @@ tryGetLayouts (f:fs) = do
 --------------------
 -- Key sequences
 
-getKeySequences :: (MonadIO m, MonadReader Prefs m)
+getKeySequences :: (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+  MonadIO m, MonadReader Prefs m)
         => Handle -> [(String,Key)] -> m (TreeMap Char Key)
 getKeySequences h tinfos = do
     sttys <- liftIO $ sttyKeys h
@@ -122,6 +126,9 @@ getKeySequences h tinfos = do
     return $ listToTree
         $ ansiKeys ++ tinfos ++ sttys ++ customKeySeqs
   where
+#if MIN_VERSION_base(4,16,0)
+    getCustomKeySeqs :: (Total m, MonadIO m, MonadReader Prefs m) => m  [(String, Key)]
+#endif
     getCustomKeySeqs = do
         kseqs <- asks customKeySequences
         termName <- liftIO $ handle (\(_::IOException) -> return "") (getEnv "TERM")
@@ -212,7 +219,11 @@ lookupChars (TreeMap tm) (c:cs) = case Map.lookup c tm of
 
 -----------------------------
 
-withPosixGetEvent :: (MonadIO m, MonadMask m, MonadReader Prefs m)
+withPosixGetEvent :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m, MonadReader Prefs m)
         => TChan Event -> Handles -> [(String,Key)]
                 -> (m Event -> m a) -> m a
 withPosixGetEvent eventChan h termKeys f = wrapTerminalOps h $ do
@@ -220,18 +231,30 @@ withPosixGetEvent eventChan h termKeys f = wrapTerminalOps h $ do
     withWindowHandler eventChan
         $ f $ liftIO $ getEvent (ehIn h) baseMap eventChan
 
-withWindowHandler :: (MonadIO m, MonadMask m) => TChan Event -> m a -> m a
+withWindowHandler :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m) => TChan Event -> m a -> m a
 withWindowHandler eventChan = withHandler windowChange $
     Catch $ atomically $ writeTChan eventChan WindowResize
 
-withSigIntHandler :: (MonadIO m, MonadMask m) => m a -> m a
+withSigIntHandler :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m) => m a -> m a
 withSigIntHandler f = do
     tid <- liftIO myThreadId
     withHandler keyboardSignal
             (Catch (throwTo tid Interrupt))
             f
 
-withHandler :: (MonadIO m, MonadMask m) => Signal -> Handler -> m a -> m a
+withHandler :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m) => Signal -> Handler -> m a -> m a
 withHandler signal handler f = do
     old_handler <- liftIO $ installHandler signal handler Nothing
     f `finally` liftIO (installHandler signal old_handler Nothing)
@@ -290,8 +313,16 @@ posixRunTerm ::
     Handles
     -> [IO (Maybe Layout)]
     -> [(String,Key)]
-    -> (forall m b . (Total m, MonadIO m, MonadMask m) => m b -> m b)
-    -> (forall m . (Total m, MonadMask m, CommandMonad m) => EvalTerm (PosixT m))
+    -> (forall m b . (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+    MonadIO m, MonadMask m) => m b -> m b)
+    -> (forall m . (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+    MonadMask m, CommandMonad m) => EvalTerm (PosixT m))
     -> IO RunTerm
 posixRunTerm hs layoutGetters keys wrapGetEvent evalBackend = do
     ch <- newTChanIO
@@ -347,7 +378,11 @@ posixFileRunTerm hs = do
 -- NOTE: If we set stdout to NoBuffering, there can be a flicker effect when many
 -- characters are printed at once.  We'll keep it buffered here, and let the Draw
 -- monad manually flush outputs that don't print a newline.
-wrapTerminalOps :: (MonadIO m, MonadMask m) => Handles -> m a -> m a
+wrapTerminalOps :: (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m) => Handles -> m a -> m a
 wrapTerminalOps hs =
     bracketSet (hGetBuffering h_in) (hSetBuffering h_in) NoBuffering
     -- TODO: block buffering?  Certain \r and \n's are causing flicker...

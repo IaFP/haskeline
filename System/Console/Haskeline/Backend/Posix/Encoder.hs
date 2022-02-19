@@ -6,6 +6,11 @@ For the "new" way, we require ghc>=7.4.1 due to GHC bug #5436.
 This module exports opaque Encoder/Decoder datatypes, along with several helper
 functions that wrap the old/new ways.
 -}
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 903
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+#endif
+
 module System.Console.Haskeline.Backend.Posix.Encoder (
         ExternalHandle(eH),
         externalHandle,
@@ -19,6 +24,9 @@ import System.Console.Haskeline.Monads
 
 import GHC.IO.Encoding (initLocaleEncoding)
 import System.Console.Haskeline.Recover
+#if MIN_VERSION_base(4,16,0)
+import GHC.Types(Total)
+#endif
 
 
 -- | An 'ExternalHandle' is a handle which may or may not be in the correct
@@ -42,7 +50,11 @@ externalHandle = ExternalHandle OtherMode
 
 -- | Use to ensure that an external handle is in the correct mode
 -- for the duration of the given action.
-withCodingMode :: (MonadIO m, MonadMask m) => ExternalHandle -> m a -> m a
+withCodingMode :: (
+#if MIN_VERSION_base(4,16,0)
+    Total m,
+#endif
+  MonadIO m, MonadMask m) => ExternalHandle -> m a -> m a
 withCodingMode ExternalHandle {externalMode=CodingMode} act = act
 withCodingMode (ExternalHandle OtherMode h) act = do
     bracket (liftIO $ hGetEncoding h)

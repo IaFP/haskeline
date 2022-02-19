@@ -118,7 +118,11 @@ instance {-# OVERLAPPABLE #-} (
 
 -- ReaderT (IORef s) is better than StateT s for some applications,
 -- since StateT loses its state after an exception such as ctrl-c.
-instance MonadIO m => MonadState s (ReaderT (IORef s) m) where
+instance (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m) => MonadState s (ReaderT (IORef s) m) where
     get = ask >>= liftIO . readIORef
     put s = ask >>= liftIO . flip writeIORef s
 

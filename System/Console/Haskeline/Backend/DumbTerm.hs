@@ -31,7 +31,11 @@ initWindow :: Window
 initWindow = Window {pos=0}
 
 #if MIN_VERSION_base(4,16,0)
-data m @ a => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a} -- PosixT m a = ReaderT Handle m a
+data (m @ a
+     , m @ (a, Window)
+     , m @ StateT Window (PosixT m) a
+     , m @ ReaderT Handles m a
+     ) => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a} -- PosixT m a = ReaderT Handle m a
                 -- deriving ( Functor
                          -- , Applicative
                          -- , Monad
