@@ -40,20 +40,26 @@ runCommandLoop :: (
                   )
     => TermOps -> Prefix -> KeyCommand m s a -> s -> m a
 runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
-    = error "not so fast smarty pants"
+    = -- error "not so fast smarty pants"
 
-    -- case e of -- NB: Need to separate this case out from the above pattern
-    --             -- in order to build on ghc-6.12.3
-    --     EvalTerm eval liftE ->
-    --        eval $ withGetEvent tops 
-    --        $ runCommandLoop' liftE tops prefix initState cmds
+    case e of -- NB: Need to separate this case out from the above pattern
+                -- in order to build on ghc-6.12.3
+        EvalTerm eval liftE ->
+           eval $ withGetEvent tops 
+           $ runCommandLoop' liftE tops prefix initState cmds
     
   
 runCommandLoop' :: forall m n s a . (
+#if MIN_VERSION_base(4,16,0)
   Total m, Total n,
+#endif
   Term n, CommandMonad n,
         MonadState Layout m, LineState s)
-        => (forall b . m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
+        => (forall b .
+#if MIN_VERSION_base(4,16,0)
+                      (m @ b, n @ b) =>
+#endif
+                      m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
         -> n a
 runCommandLoop' liftE tops prefix initState cmds getEvent = do
     let s = lineChars prefix initState

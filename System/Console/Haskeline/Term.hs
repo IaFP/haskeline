@@ -122,9 +122,20 @@ isTerminalStyle r = case termOps r of
 -- Generic terminal actions which are independent of the Term being used.
 data EvalTerm m
     = forall n . (
-      Term n, CommandMonad n)
-            => EvalTerm (forall a . n a -> m a)
-                        (forall a . m a -> n a)
+#if MIN_VERSION_base(4,16,0)
+      Total n,
+#endif
+      Term n, CommandMonad n) 
+            => EvalTerm (forall a .
+#if MIN_VERSION_base(4,16,0)
+                         (m @ a, n @ a) =>
+#endif
+                                    n a -> m a)
+                        (forall a .
+#if MIN_VERSION_base(4,16,0)
+                         (m @ a, n @ a) =>
+#endif
+                                    m a -> n a)
 
 mapEvalTerm :: (
 #if MIN_VERSION_base(4,16,0)

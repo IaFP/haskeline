@@ -363,7 +363,7 @@ foreachDigit f ds = choiceCmd $ map (digitCmd f) ds
 #if MIN_VERSION_base(4,16,0)
       digitCmd :: forall m s t. (Total m, Monad m, LineState t) => (Int -> s -> t) -> Char -> KeyMap (Command m s t)
 #endif
-      digitCmd f d = simpleChar d +> change (f (toDigit d))
+      digitCmd g d = simpleChar d +> change (g (toDigit d))
       toDigit d = fromEnum d - fromEnum '0'
 
 
