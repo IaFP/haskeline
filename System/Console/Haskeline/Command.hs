@@ -61,25 +61,23 @@ instance Functor KeyConsumed where
     fmap f (NotConsumed x) = NotConsumed (f x)
     fmap f (Consumed x) = Consumed (f x)
 
-
-data CmdM m a   = GetKey (KeyMap (CmdM m a))
-                | DoEffect Effect (CmdM m a)
-                |
+data
 #if MIN_VERSION_base(4,16,0)
-                  m @ CmdM m a =>
+  m @ CmdM m a => -- Monad m?
 #endif
-                  CmdM (m (CmdM m a))
+  CmdM m a   = GetKey (KeyMap (CmdM m a))
+                | DoEffect Effect (CmdM m a)
+                | CmdM (m (CmdM m a))
                 | Result a
 
 type Command m s t = s -> CmdM m t
 
-instance (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Monad m) => Functor (CmdM m) where
-    fmap = liftM
-
+instance Monad m => Functor (CmdM m) where
+    fmap f (GetKey km) = GetKey $ fmap (fmap f) km
+    fmap f (DoEffect e m) = DoEffect e $ fmap f m
+    fmap f (CmdM mm) = CmdM $ fmap (fmap f) mm
+    fmap f (Result a) = Result $ f a
+      
 instance (
 #if MIN_VERSION_base(4,16,0)
   Total m,

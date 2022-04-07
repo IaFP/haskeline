@@ -30,7 +30,7 @@ data Window = Window {pos :: Int -- ^ # of visible chars to left of cursor
 initWindow :: Window
 initWindow = Window {pos=0}
 
-#if MIN_VERSION_base(4,16,0)
+#if MIN_VERSION_base(4,16,0) 
 data (m @ a
      , m @ (a, Window)
      , m @ StateT Window (PosixT m) a
@@ -43,7 +43,7 @@ data (m @ a
                          -- , MonadThrow, MonadCatch
                          -- , MonadMask,
                           -- MonadState Window, MonadReader Handles
-                 --        )
+                 --        )  ANI: This should go away
 
 instance (Total m, Functor m) => Functor (DumbTerm m) where
   fmap f (DumbTerm x) = DumbTerm $ fmap f x
