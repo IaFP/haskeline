@@ -61,10 +61,10 @@ newtype
                                 (ReaderT (IORef KillRing)
                                 (ReaderT Prefs
                                 (ReaderT (Settings m) m)))) a}
-                            deriving (Functor, Applicative
+                            deriving (Functor, Applicative, Monad
 #if MIN_VERSION_base(4,16,0)
 #else
-                                      , Monad, MonadIO,
+                                      , MonadIO,
                                       MonadThrow, MonadCatch, MonadMask
 #endif
 
@@ -75,18 +75,10 @@ newtype
                 -- we implement the mtl versions of those classes.
 
 #if MIN_VERSION_base(4,16,0)
-{-
-instance (Total m, Functor m) => Functor (InputT m) where
-  fmap f (InputT x) = InputT (fmap f x)
-
-instance (Total m, Applicative m) => Applicative (InputT m) where
-  pure a = InputT $ pure a
-  (InputT f) <*> (InputT a) = InputT (f <*> a)
--}
-instance (Total m, Monad m) => Monad (InputT m) where
-  x >>= f = InputT $ do x' <- unInputT x
-                        x'' <- unInputT (f x')
-                        return x''
+-- instance (Total m, Monad m) => Monad (InputT m) where
+--   x >>= f = InputT $ do x' <- unInputT x
+--                         x'' <- unInputT (f x')
+--                         return x''
 instance (Total m, MonadIO m) => MonadIO (InputT m) where
   liftIO = InputT . liftIO
 

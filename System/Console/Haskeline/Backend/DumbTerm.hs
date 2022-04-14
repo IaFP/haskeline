@@ -31,22 +31,19 @@ initWindow :: Window
 initWindow = Window {pos=0}
 
 #if MIN_VERSION_base(4,16,0) 
-data (m @ a
-     , m @ (a, Window)
-     , m @ StateT Window (PosixT m) a
-     , m @ ReaderT Handles m a
-     ) => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a} -- PosixT m a = ReaderT Handle m a
-                -- deriving ( Functor
+newtype ( -- m @ a
+          m @ (a, Window)
+        -- , m @ StateT Window (PosixT m) a
+        -- , m @ ReaderT Handles m a
+        ) => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a} -- PosixT m a = ReaderT Handle m a
+                deriving ( Functor
                          -- , Applicative
                          -- , Monad
                          -- , MonadIO,
                          -- , MonadThrow, MonadCatch
                          -- , MonadMask,
                           -- MonadState Window, MonadReader Handles
-                 --        )  ANI: This should go away
-
-instance (Total m, Functor m) => Functor (DumbTerm m) where
-  fmap f (DumbTerm x) = DumbTerm $ fmap f x
+                         )  -- ANI: This should go away
 
 instance (Total m, Monad m) => Applicative (DumbTerm m) where
    pure a = DumbTerm (SS.StateT $ \s -> return (a, s))

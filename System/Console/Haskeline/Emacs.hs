@@ -23,8 +23,16 @@ import GHC.Types (Total)
 import Control.Monad.Catch (MonadMask)
 import Data.Char
 
-type InputCmd s t = forall m . (Total m, MonadIO m, MonadMask m) => Command (InputCmdT m) s t
-type InputKeyCmd s t = forall m . (Total m, MonadIO m, MonadMask m) => KeyCommand (InputCmdT m) s t
+type InputCmd s t = forall m . (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m) => Command (InputCmdT m) s t
+type InputKeyCmd s t = forall m . (
+#if MIN_VERSION_base(4,16,0)
+  Total m,
+#endif
+  MonadIO m, MonadMask m) => KeyCommand (InputCmdT m) s t
 
 emacsCommands :: InputKeyCmd InsertMode (Maybe String)
 emacsCommands = choiceCmd [
@@ -93,7 +101,11 @@ controlActions = choiceCmd
 rotatePaste :: InputCmd InsertMode InsertMode
 rotatePaste im = get >>= loop
   where
-    loop :: (Total m, Monad m) => Stack [Grapheme] -> CmdM m InsertMode
+    loop :: (
+#if MIN_VERSION_base(4,16,0)
+             Total m,
+#endif
+             Monad m) => Stack [Grapheme] -> CmdM m InsertMode
     loop kr = case peek kr of
                     Nothing -> return im
                     Just s -> setState (insertGraphemes s im)
