@@ -31,38 +31,14 @@ initWindow :: Window
 initWindow = Window {pos=0}
 
 #if MIN_VERSION_base(4,16,0) 
-newtype ( -- m @ a
-          m @ (a, Window)
-        -- , m @ StateT Window (PosixT m) a
-        -- , m @ ReaderT Handles m a
-        ) => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a} -- PosixT m a = ReaderT Handle m a
-                deriving ( Functor
-                         -- , Applicative
-                         -- , Monad
-                         -- , MonadIO,
-                         -- , MonadThrow, MonadCatch
-                         -- , MonadMask,
-                          -- MonadState Window, MonadReader Handles
-                         )  -- ANI: This should go away
+newtype ( m @ (a, Window)) => DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a}
+                deriving ( Functor )
 
-instance (Total m, Monad m) => Applicative (DumbTerm m) where
-   pure a = DumbTerm (SS.StateT $ \s -> return (a, s))
-   (DumbTerm f) <*> (DumbTerm a) = DumbTerm (f <*> a)
-
-instance (Total m, Monad m) => Monad (DumbTerm m) where
-   x >>= f = DumbTerm $ do x' <- unDumbTerm x
-                           x'' <- unDumbTerm (f x')
-                           return x''
-
-instance (Total m, MonadIO m) => MonadIO (DumbTerm m) where
-  liftIO = DumbTerm . liftIO
-  
-
-instance (Total m, MonadThrow m) => MonadThrow (DumbTerm m) where
-  throwM = DumbTerm . throwM
-  
-instance (Total m, MonadCatch m) => MonadCatch (DumbTerm m) where
-  catch m f = DumbTerm $ catch (unDumbTerm m) (\e -> unDumbTerm (f e))
+deriving instance (Total m, Monad m) => Applicative (DumbTerm m)
+deriving instance (Total m, Monad m) => Monad (DumbTerm m) 
+deriving instance (Total m, MonadIO m) => MonadIO (DumbTerm m)
+deriving instance (Total m, MonadThrow m) => MonadThrow (DumbTerm m) 
+deriving instance (Total m, MonadCatch m) => MonadCatch (DumbTerm m)
 
 instance (Total m, MonadMask m) => MonadMask (DumbTerm m) where
   mask a = DumbTerm $ mask $ \u -> unDumbTerm (a $ q u)
@@ -81,12 +57,8 @@ instance (Total m, MonadMask m) => MonadMask (DumbTerm m) where
     c <- release resource (ExitCaseSuccess b)
     return (b, c)
 
-instance (Total m, Monad m) => MonadState Window (DumbTerm m) where
-  get   = DumbTerm $ SS.state (\s -> (s, s))
-  put s = DumbTerm $ SS.state (\_ -> ((), s))
-
-instance (Total m, Monad m) => MonadReader Handles (DumbTerm m) where
-  ask = DumbTerm $ Monads.ask
+deriving instance (Total m, Monad m) => MonadState Window (DumbTerm m) 
+deriving instance (Total m, Monad m) => MonadReader Handles (DumbTerm m)
 
 #else
 newtype DumbTerm m a = DumbTerm {unDumbTerm :: StateT Window (PosixT m) a}

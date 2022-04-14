@@ -75,18 +75,9 @@ newtype
                 -- we implement the mtl versions of those classes.
 
 #if MIN_VERSION_base(4,16,0)
--- instance (Total m, Monad m) => Monad (InputT m) where
---   x >>= f = InputT $ do x' <- unInputT x
---                         x'' <- unInputT (f x')
---                         return x''
-instance (Total m, MonadIO m) => MonadIO (InputT m) where
-  liftIO = InputT . liftIO
-
-instance (Total m, MonadThrow m) => MonadThrow (InputT m) where
-  throwM = InputT . throwM
-
-instance (Total m, MonadCatch m) => MonadCatch (InputT m) where
-  catch m f = InputT $ catch (unInputT m) (\e -> unInputT $ f e)
+deriving instance (Total m, MonadIO m) => MonadIO (InputT m) 
+deriving instance (Total m, MonadThrow m) => MonadThrow (InputT m)
+deriving instance (Total m, MonadCatch m) => MonadCatch (InputT m)
 
 instance (MonadIO m, Total m, MonadMask m) => MonadMask (InputT m) where
   mask a = InputT $ mask $ \u -> unInputT (a $ q u)
@@ -122,8 +113,6 @@ instance (MonadIO m, Total m, MonadMask m) => MonadMask (InputT m) where
     c <- release resource (ExitCaseSuccess b)
     return (b, c)
 #endif
-
-
 
 instance MonadTrans InputT where
     lift = InputT . lift . lift . lift . lift . lift
