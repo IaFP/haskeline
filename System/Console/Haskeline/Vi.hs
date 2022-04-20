@@ -432,7 +432,9 @@ replaceLoop = saveForUndo >|> change insertFromCommandMode >|> loop
 
 ---------------------------
 -- Saving previous commands
-
+#if MIN_VERSION_base(4,16,0)
+{-# NOINLINE storeLastCmd #-} -- ANI TODO i think this is a inliner/specializer bug
+#endif
 storeLastCmd :: (
 #if MIN_VERSION_base(4,16,0)
     Total m,
