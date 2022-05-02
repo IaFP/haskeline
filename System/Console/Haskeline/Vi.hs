@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 #if __GLASGOW_HASKELL__ >= 903
-{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints, ExplicitNamespaces, TypeOperators, TypeFamilies #-}
 #endif
 #if __GLASGOW_HASKELL__ < 802
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}

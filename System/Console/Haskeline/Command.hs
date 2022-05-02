@@ -63,11 +63,7 @@ instance Functor KeyConsumed where
 
 data CmdM m a   = GetKey (KeyMap (CmdM m a))
                 | DoEffect Effect (CmdM m a)
-                |
-#if MIN_VERSION_base(4,16,0)
-                  m @ CmdM m a =>
-#endif
-                    CmdM (m (CmdM m a))
+                | CmdM (m (CmdM m a))
                 | Result a
 
 type Command m s t = s -> CmdM m t
