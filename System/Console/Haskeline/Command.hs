@@ -73,11 +73,8 @@ instance (
   Total m,
 #endif
   Monad m) => Functor (CmdM m) where
-    fmap f (GetKey km) = GetKey $ fmap (fmap f) km
-    fmap f (DoEffect e m) = DoEffect e $ fmap f m
-    fmap f (CmdM mm) = CmdM $ fmap (fmap f) mm
-    fmap f (Result a) = Result $ f a
-      
+    fmap = liftM
+
 instance (
 #if MIN_VERSION_base(4,16,0)
   Total m,
