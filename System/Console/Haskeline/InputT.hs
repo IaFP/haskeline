@@ -117,18 +117,10 @@ instance (MonadIO m, Total m, MonadMask m) => MonadMask (InputT m) where
 instance MonadTrans InputT where
     lift = InputT . lift . lift . lift . lift . lift
 
-instance (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-    Fail.MonadFail m ) => Fail.MonadFail (InputT m) where
+instance (Applicative m, Fail.MonadFail m ) => Fail.MonadFail (InputT m) where
     fail = lift . Fail.fail
 
-instance (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadFix m ) => MonadFix (InputT m) where
+instance (MonadFix m) => MonadFix (InputT m) where
     mfix f = InputT (mfix (unInputT . f))
 
 -- | Run an action in the underlying monad, as per 'lift', passing it a runner
@@ -136,12 +128,7 @@ instance (
 -- the event that we have some function that takes an action in the underlying
 -- monad as an argument (such as 'lift', 'hoist', 'forkIO', etc) and we want
 -- to compose it with actions in 'InputT'.
-withRunInBase :: (
-#if MIN_VERSION_base(4,16,0)
-         Total m, MonadReader (RunTerm) m, MonadReader (IORef History) m
-  , MonadReader (IORef KillRing) m, MonadReader Prefs m, MonadReader (Settings m) m,
-#endif
-         Monad m) =>
+withRunInBase :: (Applicative m,  Monad m) =>
     ((forall a . InputT m a -> m a) -> m b) -> InputT m b
 withRunInBase inner = InputT $ do
     runTerm <- ask
@@ -158,27 +145,15 @@ withRunInBase inner = InputT $ do
         unInputT
 
 -- | Get the current line input history.
-getHistory :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m) => InputT m History
+getHistory :: (MonadIO m) => InputT m History
 getHistory = InputT get
 
 -- | Set the line input history.
-putHistory :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m) => History -> InputT m ()
+putHistory :: (MonadIO m) => History -> InputT m ()
 putHistory = InputT . put
 
 -- | Change the current line input history.
-modifyHistory :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m) => (History -> History) -> InputT m ()
+modifyHistory :: (MonadIO m) => (History -> History) -> InputT m ()
 modifyHistory = InputT . modify
 
 -- for internal use only
@@ -187,32 +162,20 @@ type InputCmdT m = StateT Layout (UndoT (StateT HistLog (ReaderT (IORef KillRing
                         -- isn't used outside of InputCmdT.
                 (ReaderT Prefs (ReaderT (Settings m) m)))))
 
-runInputCmdT :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m) => TermOps -> InputCmdT m a -> InputT m a
+runInputCmdT :: (MonadIO m) => TermOps -> InputCmdT m a -> InputT m a
 runInputCmdT tops f = InputT $ do
     layout <- liftIO $ getLayout tops
     history <- get
     lift $ lift $ evalStateT' (histLog history) $ runUndoT $ evalStateT' layout f
 
-instance (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => CommandMonad (InputCmdT m) where
+instance (MonadIO m, MonadMask m) => CommandMonad (InputCmdT m) where
     runCompletion lcs = do
         settings <- ask
         lift $ lift $ lift $ lift $ lift $ lift $ complete settings lcs
 
 -- | Run a line-reading application.  Uses 'defaultBehavior' to determine the
 -- interaction behavior.
-runInputTWithPrefs :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => Prefs -> Settings m -> InputT m a -> m a
+runInputTWithPrefs :: (MonadIO m, MonadMask m) => Prefs -> Settings m -> InputT m a -> m a
 runInputTWithPrefs = runInputTBehaviorWithPrefs defaultBehavior
 
 -- | Run a line-reading application.  This function should suffice for most applications.
@@ -224,19 +187,11 @@ runInputTWithPrefs = runInputTBehaviorWithPrefs defaultBehavior
 -- If it uses terminal-style interaction, 'Prefs' will be read from the user's @~/.haskeline@ file
 -- (if present).
 -- If it uses file-style interaction, 'Prefs' are not relevant and will not be read.
-runInputT :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => Settings m -> InputT m a -> m a
+runInputT :: (MonadIO m, MonadMask m) => Settings m -> InputT m a -> m a
 runInputT = runInputTBehavior defaultBehavior
 
 -- | Returns 'True' if the current session uses terminal-style interaction.  (See 'Behavior'.)
-haveTerminalUI :: (
-#if MIN_VERSION_base(4,16,0)
-        Total m,
-#endif
-         Monad m) => InputT m Bool
+haveTerminalUI :: (Applicative m, Monad m) => InputT m Bool
 haveTerminalUI = InputT $ do b <- ask
                              return $ isTerminalStyle b
 
@@ -257,11 +212,7 @@ data Behavior = Behavior (IO RunTerm)
 
 -- | Create and use a RunTerm, ensuring that it will be closed even if
 -- an async exception occurs during the creation or use.
-withBehavior :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => Behavior -> (RunTerm -> m a) -> m a
+withBehavior :: (MonadIO m, MonadMask m) => Behavior -> (RunTerm -> m a) -> m a
 withBehavior (Behavior run) f = bracket (liftIO run) (liftIO . closeTerm) f
 
 -- | Run a line-reading application according to the given behavior.
@@ -269,11 +220,7 @@ withBehavior (Behavior run) f = bracket (liftIO run) (liftIO . closeTerm) f
 -- If it uses terminal-style interaction, 'Prefs' will be read from the
 -- user's @~/.haskeline@ file (if present).
 -- If it uses file-style interaction, 'Prefs' are not relevant and will not be read.
-runInputTBehavior :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => Behavior -> Settings m -> InputT m a -> m a
+runInputTBehavior :: (MonadIO m, MonadMask m) => Behavior -> Settings m -> InputT m a -> m a
 runInputTBehavior behavior settings f = withBehavior behavior $ \run -> do
     prefs <- if isTerminalStyle run
                 then liftIO readPrefsFromHome
@@ -281,21 +228,13 @@ runInputTBehavior behavior settings f = withBehavior behavior $ \run -> do
     execInputT prefs settings run f
 
 -- | Run a line-reading application.
-runInputTBehaviorWithPrefs :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m)
+runInputTBehaviorWithPrefs :: (MonadIO m, MonadMask m)
     => Behavior -> Prefs -> Settings m -> InputT m a -> m a
 runInputTBehaviorWithPrefs behavior prefs settings f
     = withBehavior behavior $ flip (execInputT prefs settings) f
 
 -- | Helper function to feed the parameters into an InputT.
-execInputT :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => Prefs -> Settings m -> RunTerm
+execInputT :: (MonadIO m, MonadMask m) => Prefs -> Settings m -> RunTerm
                 -> InputT m a -> m a
 execInputT prefs settings run (InputT f)
     = runReaderT' settings $ runReaderT' prefs
@@ -304,11 +243,7 @@ execInputT prefs settings run (InputT f)
             $ runReaderT f run
 
 -- | Map a user interaction by modifying the base monad computation.
-mapInputT ::
-#if MIN_VERSION_base(4,16,0)
-  Total m => 
-#endif
-  (forall b . m b -> m b) -> InputT m a -> InputT m a
+mapInputT :: (forall b . m b -> m b) -> InputT m a -> InputT m a
 mapInputT f = InputT . mapReaderT (mapReaderT (mapReaderT
                                   (mapReaderT (mapReaderT f))))
                     . unInputT
