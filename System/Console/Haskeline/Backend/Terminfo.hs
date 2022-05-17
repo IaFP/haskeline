@@ -120,13 +120,13 @@ newtype m @ ((a, TermRows), TermPos) => Draw m a
                             (PosixT m))))) a}
   deriving (Functor)  
 
-deriving instance (Total m, Monad m) => Applicative (Draw m)
-deriving instance (Total m, Monad m) => Monad (Draw m) 
-deriving instance (Total m, MonadIO m) => MonadIO (Draw m) 
-deriving instance (Total m, MonadThrow m) => MonadThrow (Draw m)
-deriving instance (Total m, MonadCatch m) => MonadCatch (Draw m) 
+deriving instance (Applicative m, Monad m) => Applicative (Draw m)
+deriving instance (Applicative m, Monad m) => Monad (Draw m) 
+deriving instance (Applicative m, MonadIO m) => MonadIO (Draw m) 
+deriving instance (Applicative m, MonadThrow m) => MonadThrow (Draw m)
+deriving instance (Applicative m, MonadCatch m) => MonadCatch (Draw m) 
 
-instance (Total m, MonadMask m) => MonadMask (Draw m) where -- ANI TODO need to see why this fails on deriving
+instance (Applicative m, MonadMask m) => MonadMask (Draw m) where -- ANI TODO need to see why this fails on deriving
   mask a = Draw $ mask $ \u -> unDraw (a $ q u)
     where q :: ((ReaderT Actions
                   (ReaderT Terminal
@@ -159,11 +159,11 @@ instance (Total m, MonadMask m) => MonadMask (Draw m) where -- ANI TODO need to 
     c <- release resource (ExitCaseSuccess b)
     return (b, c)
 
-deriving instance (Total m, Monad m) => MonadReader Actions (Draw m)
-deriving instance (Total m, Monad m) => MonadReader Terminal (Draw m)
-deriving instance (Total m, Monad m) => MonadState TermPos (Draw m)
-deriving instance (Total m, Monad m) => MonadState TermRows (Draw m)
-deriving instance (Total m, Monad m) => MonadReader Handles (Draw m)
+deriving instance (Applicative m, Monad m) => MonadReader Actions (Draw m)
+deriving instance (Applicative m, Monad m) => MonadReader Terminal (Draw m)
+deriving instance (Applicative m, Monad m) => MonadState TermPos (Draw m)
+deriving instance (Applicative m, Monad m) => MonadState TermRows (Draw m)
+deriving instance (Applicative m, Monad m) => MonadReader Handles (Draw m)
 
 #else
 newtype Draw m a = Draw {unDraw :: (ReaderT Actions
@@ -182,11 +182,7 @@ newtype Draw m a = Draw {unDraw :: (ReaderT Actions
 instance MonadTrans Draw where
     lift = Draw . lift . lift . lift . lift . lift
 
-evalDraw :: forall m . (
-#if MIN_VERSION_base(4,16,0)
-        Total m,
-#endif
-        MonadReader Layout m, CommandMonad m) => Terminal -> Actions -> EvalTerm (PosixT m)
+evalDraw :: forall m . (MonadReader Layout m, CommandMonad m) => Terminal -> Actions -> EvalTerm (PosixT m)
 evalDraw term actions = EvalTerm eval liftE
   where
     liftE :: Total m => ReaderT Handles m a -> Draw m a
@@ -212,11 +208,7 @@ runTerminfoDraw h = do
                 (evalDraw term actions)
 
 -- If the keypad on/off capabilities are defined, wrap the computation with them.
-wrapKeypad :: (
-#if MIN_VERSION_base(4,16,0)
-        Total m,
-#endif
-        MonadIO m, MonadMask m) => Handle -> Terminal -> m a -> m a
+wrapKeypad :: (MonadIO m, MonadMask m) => Handle -> Terminal -> m a -> m a
 wrapKeypad h term f = (maybeOutput keypadOn >> f)
                             `finally` maybeOutput keypadOff
   where
@@ -263,17 +255,9 @@ type TermAction = Actions -> TermOutput
 
 type ActionT = Writer.WriterT TermAction
 
-type ActionM a = forall m . (
-#if MIN_VERSION_base(4,16,0)
-        Total m,
-#endif
-        MonadReader Layout m, MonadIO m) => ActionT (Draw m) a
+type ActionM a = forall m . (MonadReader Layout m, MonadIO m) => ActionT (Draw m) a
 
-runActionT :: (
-#if MIN_VERSION_base(4,16,0)
-        Total m,
-#endif
-        MonadIO m) => ActionT (Draw m) a -> Draw m a
+runActionT :: (MonadIO m) => ActionT (Draw m) a -> Draw m a
 runActionT m = do
     (x,action) <- Writer.runWriterT m
     toutput <- asks action
@@ -437,11 +421,7 @@ repositionT _ s = do
     put initTermRows
     drawLineDiffT ([],[]) s
 
-instance (
-#if MIN_VERSION_base(4,16,0)
-       Total m,
-#endif
-       MonadIO m, MonadMask m, MonadReader Layout m) => Term (Draw m) where
+instance (MonadIO m, MonadMask m, MonadReader Layout m) => Term (Draw m) where
     drawLineDiff xs ys = runActionT $ drawLineDiffT xs ys
     reposition layout lc = runActionT $ repositionT layout lc
     

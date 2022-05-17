@@ -20,9 +20,6 @@ import System.Console.Haskeline.InputT
 import Data.Char
 import Control.Monad(liftM)
 import Control.Monad.Catch (MonadMask)
-#if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total)
-#endif
 
 type EitherMode = Either CommandMode InsertMode
 
@@ -33,11 +30,7 @@ data ViState m = ViState {
             lastSearch :: [Grapheme]
          }
 
-emptyViState :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Monad m) => ViState m
+emptyViState :: (Applicative m, Monad m) => ViState m
 emptyViState = ViState {
             lastCommand = return . Left . argState,
             lastSearch = []
@@ -45,16 +38,8 @@ emptyViState = ViState {
 
 type ViT m = StateT (ViState m) (InputCmdT m)
 
-type InputCmd s t = forall m . (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => Command (ViT m) s t
-type InputKeyCmd s t = forall m . (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadIO m, MonadMask m) => KeyCommand (ViT m) s t
+type InputCmd s t = forall m . (Applicative m, MonadIO m, MonadMask m) => Command (ViT m) s t
+type InputKeyCmd s t = forall m . (Applicative m, MonadIO m, MonadMask m) => KeyCommand (ViT m) s t
 
 viKeyCommands :: InputKeyCmd InsertMode (Maybe String)
 viKeyCommands = choiceCmd [
@@ -92,7 +77,7 @@ insertChars :: InputKeyCmd InsertMode InsertMode
 insertChars = useChar $ loop []
     where
 #if MIN_VERSION_base(4,16,0)
-        loop :: (Total m, Monad m)
+        loop :: (Applicative m, Monad m)
              => String -> Char -> Command (ViT m) InsertMode InsertMode
 #endif
         loop ds d = change (insertChar d) >|> keyChoiceCmd [
@@ -100,7 +85,7 @@ insertChars = useChar $ loop []
                         , withoutConsuming (storeCharInsertion (reverse ds))
                         ]
 #if MIN_VERSION_base(4,16,0)
-        storeCharInsertion :: (Total m, Monad m) => String -> Command (ViT m) s s
+        storeCharInsertion :: (Applicative m, Monad m) => String -> Command (ViT m) s s
 #endif
         storeCharInsertion s = storeLastCmd $ change (applyArg 
                                                         $ withCommandMode $ insertString s)
@@ -108,11 +93,7 @@ insertChars = useChar $ loop []
 
 -- If we receive a ^D and the line is empty, return Nothing
 -- otherwise, act like '\n' (mimicing how Readline behaves)
-eofIfEmpty :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Monad m, Save s, Result s) => Command m s (Maybe String)
+eofIfEmpty :: (Applicative m, Monad m, Save s, Result s) => Command m s (Maybe String)
 eofIfEmpty s
     | save s == emptyIM = return Nothing
     | otherwise = finish s
@@ -168,7 +149,6 @@ replaceOnce :: InputCmd CommandMode CommandMode
 replaceOnce = try $ changeFromChar replaceChar
 
 repeatedCommands :: InputKeyCmd CommandMode EitherMode
-              -- :: forall m. (Total m, MonadIO m, MonadMask m) => KeyCommand (ViT m) CommandMode EitherMode
 repeatedCommands = choiceCmd [argumented, doBefore noArg repeatableCommands]
     where
         start = foreachDigit startArg ['1'..'9']
@@ -189,13 +169,13 @@ pureMovements = choiceCmd $ charMovements ++ map mkSimpleCommand movements
                         , charMovement 'T' $ \c -> goLeftUntil $ afterChar (==c)
                         ]
 #if MIN_VERSION_base(4,16,0)
-        mkSimpleCommand :: (Total m, Monad m)
+        mkSimpleCommand :: (Applicative m, Monad m)
                         => (Key, InsertMode -> InsertMode)
                         -> KeyMap (Command m (ArgMode CommandMode) CommandMode)
 #endif
         mkSimpleCommand (k,move) = k +> change (applyCmdArg move)
 #if MIN_VERSION_base(4,16,0)
-        charMovement :: (Total m, Monad m)
+        charMovement :: (Applicative m, Monad m)
                      => Char
                      -> (Char -> InsertMode -> InsertMode)
                      -> KeyMap (Command m (ArgMode CommandMode) CommandMode)
@@ -205,11 +185,7 @@ pureMovements = choiceCmd $ charMovements ++ map mkSimpleCommand movements
                                         , withoutConsuming (change argState)
                                         ]
 
-useMovementsForKill ::
-#if MIN_VERSION_base(4,16,0)
-  Total m => 
-#endif
-  Command m s t -> (KillHelper -> Command m s t) -> KeyCommand m s t
+useMovementsForKill :: Command m s t -> (KillHelper -> Command m s t) -> KeyCommand m s t
 useMovementsForKill alternate useHelper = choiceCmd $
             specialCases
             ++ map (\(k,move) -> k +> useHelper (SimpleMove move)) movements
@@ -236,7 +212,7 @@ repeatableCommands = choiceCmd
                         ]
     where
 #if MIN_VERSION_base(4,16,0)
-        runLastCommand :: (Total m , Monad m) => ArgMode CommandMode -> CmdM (ViT m) EitherMode
+        runLastCommand :: (Applicative m , Monad m) => ArgMode CommandMode -> CmdM (ViT m) EitherMode
 #endif
         runLastCommand s = liftM lastCommand get >>= ($ s)
 
@@ -254,7 +230,7 @@ repeatableCmdMode = choiceCmd
                     ]
     where
 #if MIN_VERSION_base(4,16,0)
-        repeatableChange :: (Total m, Monad m) => (CommandMode -> CommandMode)
+        repeatableChange :: (Applicative m, Monad m) => (CommandMode -> CommandMode)
                             -> Command (ViT m) (ArgMode CommandMode) CommandMode
 #endif
         repeatableChange f = storedCmdAction (saveForUndo >|> change (applyArg f))
@@ -357,17 +333,12 @@ isOtherChar = not . (isSpace .||. isWordChar)
 (.||.) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 (f .||. g) x = f x || g x
 
-foreachDigit :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Monad m, LineState t) => (Int -> s -> t) -> [Char] 
+foreachDigit :: (Applicative m, Monad m, LineState t) => (Int -> s -> t) -> [Char] 
                         -> KeyCommand m s t
 foreachDigit f ds = choiceCmd $ map (digitCmd f) ds
     where
-#if MIN_VERSION_base(4,16,0)
-      digitCmd :: forall m s t. (Total m, Monad m, LineState t) => (Int -> s -> t) -> Char -> KeyMap (Command m s t)
-#endif
+      digitCmd :: forall m s t. (Applicative m, Monad m, LineState t)
+               => (Int -> s -> t) -> Char -> KeyMap (Command m s t)
       digitCmd g d = simpleChar d +> change (g (toDigit d))
       toDigit d = fromEnum d - fromEnum '0'
 
@@ -432,60 +403,32 @@ replaceLoop = saveForUndo >|> change insertFromCommandMode >|> loop
 
 ---------------------------
 -- Saving previous commands
-storeLastCmd :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  Monad m) => SavedCommand m -> Command (ViT m) s s
+storeLastCmd :: (Applicative m, Monad m) => SavedCommand m -> Command (ViT m) s s
 storeLastCmd act = \s -> do
         modify $ \vs -> vs {lastCommand = act}
         return s
 
-storedAction :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  Monad m) => SavedCommand m -> SavedCommand m
+storedAction :: (Applicative m, Monad m) => SavedCommand m -> SavedCommand m
 storedAction act = storeLastCmd act >|> act
 
-storedCmdAction :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  Monad m) => Command (ViT m) (ArgMode CommandMode) CommandMode
+storedCmdAction :: (Applicative m, Monad m) => Command (ViT m) (ArgMode CommandMode) CommandMode
                             -> Command (ViT m) (ArgMode CommandMode) CommandMode
 storedCmdAction act = storeLastCmd (liftM Left . act) >|> act
 
-storedIAction :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  Monad m) => Command (ViT m) (ArgMode CommandMode) InsertMode
+storedIAction :: (Applicative m, Monad m) => Command (ViT m) (ArgMode CommandMode) InsertMode
                         -> Command (ViT m) (ArgMode CommandMode) InsertMode
 storedIAction act = storeLastCmd (liftM Right . act) >|> act
 
-killAndStoreCmd :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  MonadIO m) => KillHelper -> Command (ViT m) (ArgMode CommandMode) CommandMode
+killAndStoreCmd :: (MonadIO m) => KillHelper -> Command (ViT m) (ArgMode CommandMode) CommandMode
 killAndStoreCmd = storedCmdAction . killFromArgHelper
 
-killAndStoreI :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  MonadIO m) => KillHelper -> Command (ViT m) (ArgMode CommandMode) InsertMode
+killAndStoreI :: (MonadIO m) => KillHelper -> Command (ViT m) (ArgMode CommandMode) InsertMode
 killAndStoreI = storedIAction . killFromArgHelper
 
-killAndStoreIE :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  MonadIO m) => KillHelper -> Command (ViT m) (ArgMode CommandMode) EitherMode
+killAndStoreIE :: (MonadIO m) => KillHelper -> Command (ViT m) (ArgMode CommandMode) EitherMode
 killAndStoreIE helper = storedAction (killFromArgHelper helper >|> return . Right)
 
-noArg :: (Monad m, Total m) => Command m s (ArgMode s)
+noArg :: (Monad m, Applicative m) => Command m s (ArgMode s)
 noArg = return . startArg 1
 
 -------------------
@@ -504,7 +447,7 @@ instance LineState SearchEntry where
                                 (entryState se)
     afterCursor = afterCursor . entryState
 
-viEnterSearch :: (Monad m, Total m) => Char -> Direction
+viEnterSearch :: (Monad m, Applicative m) => Char -> Direction
                     -> Command (ViT m) CommandMode CommandMode
 viEnterSearch c dir s = setState (SearchEntry emptyIM c) >>= loopEntry
     where
@@ -523,7 +466,7 @@ viEnterSearch c dir s = setState (SearchEntry emptyIM c) >>= loopEntry
                         , simpleKey Delete +> change (modifySE deleteNext)
                         ] 
 
-viSearchHist :: forall m . (Monad m, Total m )
+viSearchHist :: forall m . (Monad m, Applicative m )
     => Direction -> [Grapheme] -> Command (ViT m) CommandMode CommandMode
 viSearchHist dir toSearch cm = do
     vstate :: ViState m <- get

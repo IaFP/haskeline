@@ -28,7 +28,7 @@ import Control.Monad(forM)
 import System.Console.Haskeline.Directory
 import System.Console.Haskeline.Monads
 #if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total, type(@))
+import GHC.Types (type(@))
 #endif
 
 -- | Performs completions from the given line state.

@@ -137,11 +137,7 @@ data EvalTerm m
 #endif
                                     m a -> n a)
 
-mapEvalTerm :: (
-#if MIN_VERSION_base(4,16,0)
-               Total m, Total n,
-#endif
-               CommandMonad m, CommandMonad n)
+mapEvalTerm :: (CommandMonad m, CommandMonad n)
             => (forall a . n a -> m a) -> (forall a . m a -> n a)
             -> EvalTerm n -> EvalTerm m
 mapEvalTerm eval liftE (EvalTerm eval' liftE')
@@ -154,18 +150,13 @@ instance Exception Interrupt where
 
 
 
-class (
-#if MIN_VERSION_base(4,16,0)
-  m @ (String, [Completion]),
-#endif
-  MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
+class (Applicative m, 
+       MonadReader Prefs m , MonadReader Layout m, MonadIO m, MonadMask m)
         => CommandMonad m where
     runCompletion :: (String,String) -> m (String,[Completion])
 
 instance {-# OVERLAPPABLE #-} (
-#if MIN_VERSION_base(4,16,0)
-  Total m, Total (t m), -- t m @ (String, [Completion]), m @ t m (String, [Completion]),
-#endif
+  Applicative m, Applicative (t m),
   MonadTrans t, CommandMonad m, MonadReader Prefs (t m),
     MonadIO (t m), MonadMask (t m),
         MonadReader Layout (t m))

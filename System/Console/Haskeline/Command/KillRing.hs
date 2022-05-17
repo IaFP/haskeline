@@ -11,7 +11,7 @@ import System.Console.Haskeline.Command.Undo
 import Control.Monad
 import Data.IORef
 #if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total, type(@))
+import GHC.Types (type(@))
 #endif
 -- standard trick for a purely functional queue:
 data Stack a = Stack [a] [a]
@@ -35,21 +35,13 @@ push x (Stack xs ys) = Stack (x:xs) ys
 
 type KillRing = Stack [Grapheme]
 
-runKillRing :: (
-#if MIN_VERSION_base(4,16,0)
-  m @ IORef (Stack [Grapheme]),
-#endif
-  MonadIO m) => ReaderT (IORef KillRing) m a -> m a
+runKillRing :: (MonadIO m) => ReaderT (IORef KillRing) m a -> m a
 runKillRing act = do
     ringRef <- liftIO $ newIORef emptyStack
     runReaderT act ringRef
 
 
-pasteCommand :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Save s, MonadState KillRing m, MonadState Undo m)
+pasteCommand :: (Applicative m, Save s, MonadState KillRing m, MonadState Undo m)
             => ([Grapheme] -> s -> s) -> Command m (ArgMode s) s
 pasteCommand use = \s -> do
     ms <- liftM peek get
@@ -66,11 +58,7 @@ deleteFromDiff' (IMode xs1 ys1) (IMode xs2 ys2)
   where
     posChange = length xs2 - length xs1
 
-killFromHelper :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadState KillRing m, MonadState Undo m,
+killFromHelper :: (Applicative m, MonadState KillRing m, MonadState Undo m,
                         Save s, Save t)
                 => KillHelper -> Command m s t
 killFromHelper helper = saveForUndo >|> \oldS -> do
@@ -78,22 +66,14 @@ killFromHelper helper = saveForUndo >|> \oldS -> do
     modify (push gs)
     setState (restore newIM)
 
-killFromArgHelper :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadState KillRing m, MonadState Undo m, Save s, Save t)
+killFromArgHelper :: (Applicative m, MonadState KillRing m, MonadState Undo m, Save s, Save t)
                 => KillHelper -> Command m (ArgMode s) t
 killFromArgHelper helper = saveForUndo >|> \oldS -> do
     let (gs,newIM) = applyArgHelper helper (fmap save oldS)
     modify (push gs)
     setState (restore newIM)
 
-copyFromArgHelper :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadState KillRing m, Save s)
+copyFromArgHelper :: (Applicative m, MonadState KillRing m, Save s)
                 => KillHelper -> Command m (ArgMode s) s
 copyFromArgHelper helper = \oldS -> do
     let (gs,_) = applyArgHelper helper (fmap save oldS)

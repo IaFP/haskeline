@@ -24,9 +24,6 @@ import System.Console.Haskeline.Monads
 
 import GHC.IO.Encoding (initLocaleEncoding)
 import System.Console.Haskeline.Recover
-#if MIN_VERSION_base(4,16,0)
-import GHC.Types(Total)
-#endif
 
 
 -- | An 'ExternalHandle' is a handle which may or may not be in the correct
@@ -50,11 +47,7 @@ externalHandle = ExternalHandle OtherMode
 
 -- | Use to ensure that an external handle is in the correct mode
 -- for the duration of the given action.
-withCodingMode :: (
-#if MIN_VERSION_base(4,16,0)
-    Total m,
-#endif
-  MonadIO m, MonadMask m) => ExternalHandle -> m a -> m a
+withCodingMode :: (MonadIO m, MonadMask m) => ExternalHandle -> m a -> m a
 withCodingMode ExternalHandle {externalMode=CodingMode} act = act
 withCodingMode (ExternalHandle OtherMode h) act = do
     bracket (liftIO $ hGetEncoding h)

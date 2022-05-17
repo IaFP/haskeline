@@ -9,9 +9,6 @@ import System.Console.Haskeline.LineState
 import System.Console.Haskeline.Monads
 
 import Control.Monad
-#if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total)
-#endif
 
 data Undo = Undo {pastUndo, futureRedo :: [InsertMode]}
 
@@ -45,21 +42,13 @@ redoFuture ls u@Undo {futureRedo = (futureLS:lss)}
 
 
 
-saveForUndo :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Save s, MonadState Undo m)
+saveForUndo :: (Applicative m, Save s, MonadState Undo m)
                 => Command m s s
 saveForUndo s = do
     modify (saveToUndo s)
     return s
 
-commandUndo, commandRedo :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  MonadState Undo m, Save s) => Command m s s
+commandUndo, commandRedo :: (Applicative m, MonadState Undo m, Save s) => Command m s s
 commandUndo = simpleCommand $ liftM Right . update . undoPast
 commandRedo = simpleCommand $ liftM Right . update . redoFuture
 

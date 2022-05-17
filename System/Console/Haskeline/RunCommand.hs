@@ -32,12 +32,7 @@ import Control.Monad.Catch (handle, throwM)
 import GHC.Types (Total, type(@))
 #endif
 
-runCommandLoop :: (
-#if MIN_VERSION_base(4,16,0)
-                   Total m,
-#endif
-                   CommandMonad m, MonadState Layout m, LineState s
-                  )
+runCommandLoop :: (CommandMonad m, MonadState Layout m, LineState s)
     => TermOps -> Prefix -> KeyCommand m s a -> s -> m a
 runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
     = -- error "not so fast smarty pants"
@@ -49,24 +44,16 @@ runCommandLoop tops@TermOps{evalTerm = e} prefix cmds initState
            $ runCommandLoop' liftE tops prefix initState cmds
     
   
-runCommandLoop' :: forall m n s a . (
-#if MIN_VERSION_base(4,16,0)
-  Total m, Total n,
-#endif
-  Term n, CommandMonad n,
+runCommandLoop' :: forall m n s a . (Applicative m, Term n, CommandMonad n,
         MonadState Layout m, LineState s)
-        => (forall b .
-#if MIN_VERSION_base(4,16,0)
-                      (m @ b, n @ b) =>
-#endif
-                      m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
+        => (forall b . m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
         -> n a
 runCommandLoop' liftE tops prefix initState cmds getEvent = do
     let s = lineChars prefix initState
     drawLine s
     readMoreKeys s (fmap (liftM (\x -> (x,[])) . ($ initState)) cmds)
   where
-    readMoreKeys :: Total m => LineChars -> KeyMap (CmdM m (a,[Key])) -> n a
+    readMoreKeys :: Applicative m => LineChars -> KeyMap (CmdM m (a,[Key])) -> n a
     readMoreKeys s next = do
         event <- handle (\(e::SomeException) -> moveToNextLine s >> throwM e)
                     getEvent
@@ -81,9 +68,8 @@ runCommandLoop' liftE tops prefix initState cmds getEvent = do
                     ExternalPrint str -> do
                         printPreservingLineChars s str
                         readMoreKeys s next
-#if MIN_VERSION_base(4,16,0)
-    loopCmd :: Total m => LineChars -> CmdM m (a,[Key]) -> n a
-#endif
+    loopCmd :: Applicative m => LineChars -> CmdM m (a,[Key]) -> n a
+
     loopCmd s (GetKey next) = readMoreKeys s next
     -- If there are multiple consecutive LineChanges, only render the diff
     -- to the last one, and skip the rest. This greatly improves speed when
@@ -105,11 +91,7 @@ printPreservingLineChars s str =  do
     printLines . lines $ str
     drawLine s
 
-drawReposition :: (
-#if MIN_VERSION_base(4,16,0)
-  m @ Layout, n @ Layout,
-#endif
-  Term n, MonadState Layout m)
+drawReposition :: (Applicative m, Applicative n, Term n, MonadState Layout m)
     => (forall a . m a -> n a) -> TermOps -> LineChars -> n ()
 drawReposition liftE tops s = do
     oldLayout <- liftE get
@@ -117,11 +99,7 @@ drawReposition liftE tops s = do
     liftE (put newLayout)
     when (oldLayout /= newLayout) $ reposition oldLayout s
 
-drawEffect :: (
-#if MIN_VERSION_base(4,16,0)
-  m @ BellStyle, m @ Prefs,
-#endif
-  Term m, MonadReader Prefs m)
+drawEffect :: (Applicative m, Term m, MonadReader Prefs m)
     => Prefix -> LineChars -> Effect -> m LineChars
 drawEffect prefix s (LineChange ch) = do
     let t = ch prefix
@@ -138,11 +116,7 @@ drawEffect _ s (PrintLines ls) = do
     return s
 drawEffect _ s RingBell = actBell >> return s
 
-actBell :: (
-#if MIN_VERSION_base(4,16,0)
-  m @ BellStyle, m @ Prefs,
-#endif
-  Term m, MonadReader Prefs m) => m ()
+actBell :: (Term m, MonadReader Prefs m) => m ()
 actBell = do
     style <- asks bellStyle
     case style of
@@ -155,11 +129,7 @@ actBell = do
 -- Traverse through the tree of keybindings, using the given keys.
 -- Remove as many GetKeys as possible.
 -- Returns any unused keys (so that they can be applied at the next getInputLine).
-applyKeysToMap :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Monad m) => [Key] -> KeyMap (CmdM m (a,[Key]))
+applyKeysToMap :: (Monad m) => [Key] -> KeyMap (CmdM m (a,[Key]))
                                 -> CmdM m (a,[Key])
 applyKeysToMap [] next = GetKey next
 applyKeysToMap (k:ks) next = case lookupKM next k of
@@ -167,11 +137,7 @@ applyKeysToMap (k:ks) next = case lookupKM next k of
     Just (Consumed cmd) -> applyKeysToCmd ks cmd
     Just (NotConsumed cmd) -> applyKeysToCmd (k:ks) cmd
 
-applyKeysToCmd :: (
-#if MIN_VERSION_base(4,16,0)
-  Total m,
-#endif
-  Monad m) => [Key] -> CmdM m (a,[Key])
+applyKeysToCmd :: (Monad m) => [Key] -> CmdM m (a,[Key])
                                 -> CmdM m (a,[Key])
 applyKeysToCmd ks (GetKey next) = applyKeysToMap ks next
 applyKeysToCmd ks (DoEffect e next) = DoEffect e (applyKeysToCmd ks next)
