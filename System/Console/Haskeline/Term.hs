@@ -126,16 +126,8 @@ data EvalTerm m
       Total n,
 #endif
       Term n, CommandMonad n) 
-            => EvalTerm (forall a .
-#if MIN_VERSION_base(4,16,0)
-                         (m @ a, n @ a) =>
-#endif
-                                    n a -> m a)
-                        (forall a .
-#if MIN_VERSION_base(4,16,0)
-                         (m @ a, n @ a) =>
-#endif
-                                    m a -> n a)
+            => EvalTerm (forall a . n a -> m a)
+                        (forall a . m a -> n a)
 
 mapEvalTerm :: (
 #if MIN_VERSION_base(4,16,0)

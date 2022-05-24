@@ -168,7 +168,6 @@ replaceOnce :: InputCmd CommandMode CommandMode
 replaceOnce = try $ changeFromChar replaceChar
 
 repeatedCommands :: InputKeyCmd CommandMode EitherMode
-              -- :: forall m. (Total m, MonadIO m, MonadMask m) => KeyCommand (ViT m) CommandMode EitherMode
 repeatedCommands = choiceCmd [argumented, doBefore noArg repeatableCommands]
     where
         start = foreachDigit startArg ['1'..'9']

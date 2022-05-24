@@ -55,18 +55,13 @@ runCommandLoop' :: forall m n s a . (
 #endif
   Term n, CommandMonad n,
         MonadState Layout m, LineState s)
-        => (forall b .
-#if MIN_VERSION_base(4,16,0)
-                      (m @ b, n @ b) =>
-#endif
-                      m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
+        => (forall b . m b -> n b) -> TermOps -> Prefix -> s -> KeyCommand m s a -> n Event
         -> n a
 runCommandLoop' liftE tops prefix initState cmds getEvent = do
     let s = lineChars prefix initState
     drawLine s
     readMoreKeys s (fmap (liftM (\x -> (x,[])) . ($ initState)) cmds)
   where
-    readMoreKeys :: Total m => LineChars -> KeyMap (CmdM m (a,[Key])) -> n a
     readMoreKeys s next = do
         event <- handle (\(e::SomeException) -> moveToNextLine s >> throwM e)
                     getEvent
@@ -81,9 +76,6 @@ runCommandLoop' liftE tops prefix initState cmds getEvent = do
                     ExternalPrint str -> do
                         printPreservingLineChars s str
                         readMoreKeys s next
-#if MIN_VERSION_base(4,16,0)
-    loopCmd :: Total m => LineChars -> CmdM m (a,[Key]) -> n a
-#endif
     loopCmd s (GetKey next) = readMoreKeys s next
     -- If there are multiple consecutive LineChanges, only render the diff
     -- to the last one, and skip the rest. This greatly improves speed when
@@ -107,7 +99,7 @@ printPreservingLineChars s str =  do
 
 drawReposition :: (
 #if MIN_VERSION_base(4,16,0)
-  m @ Layout, n @ Layout,
+  n @ Layout,
 #endif
   Term n, MonadState Layout m)
     => (forall a . m a -> n a) -> TermOps -> LineChars -> n ()
@@ -119,7 +111,7 @@ drawReposition liftE tops s = do
 
 drawEffect :: (
 #if MIN_VERSION_base(4,16,0)
-  m @ BellStyle, m @ Prefs,
+  m @ Prefs, m @ BellStyle, 
 #endif
   Term m, MonadReader Prefs m)
     => Prefix -> LineChars -> Effect -> m LineChars
@@ -157,7 +149,7 @@ actBell = do
 -- Returns any unused keys (so that they can be applied at the next getInputLine).
 applyKeysToMap :: (
 #if MIN_VERSION_base(4,16,0)
-  Total m,
+  m @ CmdM m (a, [Key]),
 #endif
   Monad m) => [Key] -> KeyMap (CmdM m (a,[Key]))
                                 -> CmdM m (a,[Key])
@@ -169,7 +161,7 @@ applyKeysToMap (k:ks) next = case lookupKM next k of
 
 applyKeysToCmd :: (
 #if MIN_VERSION_base(4,16,0)
-  Total m,
+  m @ CmdM m (a, [Key]),
 #endif
   Monad m) => [Key] -> CmdM m (a,[Key])
                                 -> CmdM m (a,[Key])

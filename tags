@@ -1,0 +1,1158 @@
+
+./Setup.hs,15
+main main1,2
+
+./tests/Pty.hs,251
+module Pty Pty8,9
+runCommandInPty runCommandInPty26,27
+inputOutput inputOutput42,43
+putInput putInput47,48
+getOutput getOutput55,56
+fdReadNonBlocking fdReadNonBlocking67,68
+forkCommandInPty forkCommandInPty82,83
+loginTTY loginTTY93,94
+
+./tests/RunTTY.hs,597
+module RunTTY RunTTY3,4
+data Invocation Invocation23,24
+data Invocation = Invocation Invocation23,24
+            prog prog24,25
+            , progArgs progArgs25,26
+            , runInTTY runInTTY26,27
+            , environment environment27,28
+setEnv setEnv30,31
+setLang setLang36,37
+setTerm setTerm38,39
+setUTF8 setUTF842,43
+setLatin1 setLatin144,45
+runInvocation runInvocation48,49
+inputOutput inputOutput73,74
+getOutput getOutput79,80
+assertInvocation assertInvocation85,86
+fixOutput fixOutput94,95
+assertSameList assertSameList101,102
+testI testI107,108
+
+./tests/Unit.hs,989
+module Main Main9,10
+legacyEncoding legacyEncoding24,25
+whenLegacy whenLegacy33,34
+main main36,37
+interactionTests interactionTests50,51
+unicodeEncoding unicodeEncoding61,62
+unicodeMovement unicodeMovement86,87
+tabCompletion tabCompletion111,112
+incorrectInput incorrectInput120,121
+historyTests historyTests134,135
+invalidHist invalidHist147,148
+validHist validHist156,157
+inputChar inputChar159,160
+setCharInput setCharInput187,188
+fileStyleTests fileStyleTests191,192
+dumbTests dumbTests248,249
+smkx,rmkx rmkx273,274
+smkx,smkx273,274
+rmkx rmkx275,276
+prompt, prompt' prompt'277,278
+prompt,prompt277,278
+prompt' prompt'280,281
+end end282,283
+cr cr285,286
+nl nl288,289
+output output291,292
+wrap wrap295,296
+utf8 utf8298,299
+raw raw301,302
+err err304,305
+utf8Test utf8Test311,312
+utf8TestInvalidHist utf8TestInvalidHist315,316
+utf8TestValidHist utf8TestValidHist321,322
+latin1TestInvalidHist latin1TestInvalidHist327,328
+
+./System/Console/Haskeline.hs,817
+module System.Console.Haskeline(System.Console.Haskeline33,34
+defaultSettings defaultSettings117,118
+outputStr outputStr132,133
+outputStrLn outputStrLn142,143
+getInputLine getInputLine168,169
+getInputLineWithInitial getInputLineWithInitial192,193
+getInputLineWithInitial getInputLineWithInitial200,201
+getInputCmdLine getInputCmdLine205,206
+maybeAddHistory maybeAddHistory219,220
+getInputChar getInputChar246,247
+getPrintableChar getPrintableChar257,258
+getInputCmdChar getInputCmdChar264,265
+acceptOneChar acceptOneChar272,273
+waitForAnyKey waitForAnyKey294,295
+getAnyKeyCmd getAnyKeyCmd304,305
+getPassword getPassword331,332
+promptedInput promptedInput367,368
+withInterrupt withInterrupt413,414
+handleInterrupt handleInterrupt425,426
+getExternalPrint getExternalPrint431,432
+
+./System/Console/Haskeline/Monads.hs,1101
+module System.Console.Haskeline.Monads(System.Console.Haskeline.Monads4,5
+  Monad m) => MonadReader MonadReader45,46
+    ask ask46,47
+instance ((Total m, Monad m) => MonadReader r (ReaderT r m)48,49
+    ask ask53,54
+instance ((Total m, Monad m) => MonadReader s (StateT s m)55,56
+    ask ask60,61
+instance {-# OVERLAPPABLE #-} ((Total m, Total (t m), MonadReader r m, MonadTrans t, Monad (t m)) => MonadReader r (t m)62,63
+    ask ask68,69
+asks asks70,71
+  Monad m) => MonadState MonadState81,82
+    get get82,83
+    put put83,84
+gets gets85,86
+modify modify88,89
+update update91,92
+runReaderT' runReaderT'98,99
+instance ((Total m, Monad m) => MonadState s (StateT s m)101,102
+    get get106,107
+    put put107,108
+instance {-# OVERLAPPABLE #-} ((Total m, Total (t m), MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m)109,110
+    get get115,116
+    put put116,117
+instance ((Total m, MonadIO m) => MonadState s (ReaderT (IORef s) m)120,121
+    get get125,126
+    put put126,127
+evalStateT' evalStateT'128,129
+orElse orElse131,132
+
+./System/Console/Haskeline/Common.hs,270
+module System.Console.Haskeline.Common System.Console.Haskeline.Common5,6
+data Layout Layout19,20
+data Layout = Layout Layout19,20
+data Layout = Layout {width, height height19,20
+        => CommandMonad CommandMonad28,29
+    runCompletion runCompletion29,30
+
+./System/Console/Haskeline/Emacs.hs,594
+module System.Console.Haskeline.Emacs System.Console.Haskeline.Emacs7,8
+type InputCmd InputCmd25,26
+type InputKeyCmd InputKeyCmd26,27
+emacsCommands emacsCommands28,29
+enders enders34,35
+simpleActions, controlActions controlActions45,46
+simpleActions,simpleActions45,46
+controlActions controlActions60,61
+rotatePaste rotatePaste92,93
+wordRight, wordLeft, bigWordLeft bigWordLeft102,103
+wordRight, wordLeft,wordLeft102,103
+wordRight,wordRight102,103
+wordLeft wordLeft104,105
+bigWordLeft bigWordLeft105,106
+modifyWord modifyWord107,108
+capitalize capitalize113,114
+
+./System/Console/Haskeline/Prefs.hs,1749
+module System.Console.Haskeline.Prefs(System.Console.Haskeline.Prefs0,1
+data Prefs Prefs32,33
+data Prefs = Prefs Prefs32,33
+data Prefs = Prefs { bellStyle bellStyle32,33
+                     editMode editMode33,34
+                     maxHistorySize maxHistorySize34,35
+                     historyDuplicates historyDuplicates35,36
+                     completionType completionType36,37
+                     completionPaging completionPaging37,38
+                     completionPromptLimit completionPromptLimit40,41
+                     listCompletionsImmediately listCompletionsImmediately44,45
+                     customBindings customBindings48,49
+                     customKeySequences customKeySequences50,51
+data CompletionType CompletionType54,55
+data CompletionType = ListCompletion ListCompletion54,55
+data CompletionType = ListCompletion | MenuCompletionMenuCompletion54,55
+data BellStyle BellStyle58,59
+data BellStyle = NoBell NoBell58,59
+data BellStyle = NoBell | VisualBell VisualBell58,59
+data BellStyle = NoBell | VisualBell | AudibleBellAudibleBell58,59
+data EditMode EditMode61,62
+data EditMode = Vi Vi61,62
+data EditMode = Vi | EmacsEmacs61,62
+data HistoryDuplicates HistoryDuplicates64,65
+data HistoryDuplicates = AlwaysAdd AlwaysAdd64,65
+data HistoryDuplicates = AlwaysAdd | IgnoreConsecutive IgnoreConsecutive64,65
+data HistoryDuplicates = AlwaysAdd | IgnoreConsecutive | IgnoreAllIgnoreAll64,65
+defaultPrefs defaultPrefs69,70
+mkSettor mkSettor82,83
+readMaybe readMaybe85,86
+settors settors91,92
+addCustomBinding addCustomBinding104,105
+addCustomKeySequence addCustomKeySequence109,110
+lookupKeyBinding lookupKeyBinding123,124
+readPrefs readPrefs128,129
+
+./System/Console/Haskeline/History.hs,771
+module System.Console.Haskeline.History(System.Console.Haskeline.History13,14
+data History History37,38
+data History = History History37,38
+data History = History {histLines histLines37,38
+                        stifleAmt stifleAmt38,39
+stifleAmount stifleAmount42,43
+instance Show Show History45,46
+    show show46,47
+emptyHistory emptyHistory48,49
+historyLines historyLines52,53
+readHistory readHistory57,58
+writeHistory writeHistory69,70
+stifleHistory stifleHistory75,76
+addHistory addHistory84,85
+maybeDropLast maybeDropLast88,89
+addHistoryUnlessConsecutiveDupe addHistoryUnlessConsecutiveDupe98,99
+addHistoryRemovingAllDupes addHistoryRemovingAllDupes105,106
+readUTF8File readUTF8File113,114
+writeUTF8File writeUTF8File123,124
+
+./System/Console/Haskeline/Recover.hs,125
+module System.Console.Haskeline.Recover System.Console.Haskeline.Recover0,1
+transliterateFailure transliterateFailure5,6
+
+./System/Console/Haskeline/LineState.hs,5243
+module System.Console.Haskeline.LineState(System.Console.Haskeline.LineState3,4
+data Grapheme Grapheme75,76
+data Grapheme = Grapheme Grapheme75,76
+data Grapheme = Grapheme {gBaseChar gBaseChar75,76
+                            combiningChars combiningChars76,77
+instance Show Show Grapheme79,80
+    show show80,81
+baseChar baseChar82,83
+modifyBaseChar modifyBaseChar85,86
+mapBaseChars mapBaseChars88,89
+baseGrapheme baseGrapheme95,96
+addCombiner addCombiner99,100
+isCombiningChar isCombiningChar102,103
+stringToGraphemes stringToGraphemes108,109
+graphemesToString graphemesToString124,125
+class LineState LineState129,130
+    beforeCursor beforeCursor130,131
+    afterCursor afterCursor134,135
+type Prefix Prefix136,137
+type LineChars LineChars140,141
+lineChars lineChars143,144
+lengthToEnd lengthToEnd147,148
+class LineState s => Result Result150,151
+    toResult toResult151,152
+class LineState s => Save Save153,154
+    save save154,155
+    restore restore155,156
+listSave listSave157,158
+listRestore listRestore160,161
+class Move Move163,164
+    goLeft, goRight, moveToStart, moveToEnd moveToEnd164,165
+    goLeft, goRight, moveToStart,moveToStart164,165
+    goLeft, goRight,goRight164,165
+    goLeft,goLeft164,165
+data InsertMode InsertMode168,169
+data InsertMode = IMode IMode168,169
+instance LineState LineState InsertMode171,172
+    beforeCursor beforeCursor172,173
+    afterCursor afterCursor173,174
+instance Result Result InsertMode175,176
+    toResult toResult176,177
+instance Save Save InsertMode178,179
+    save save179,180
+    restore restore180,181
+instance Move Move InsertMode182,183
+    goLeft goLeft183,184
+    goRight goRight186,187
+    moveToStart moveToStart189,190
+    moveToEnd moveToEnd190,191
+emptyIM emptyIM192,193
+insertChar insertChar197,198
+insertString insertString206,207
+deleteNext, deletePrev deletePrev209,210
+deleteNext,deleteNext209,210
+deletePrev deletePrev213,214
+skipLeft, skipRight skipRight216,217
+skipLeft,skipLeft216,217
+skipRight skipRight219,220
+transposeChars transposeChars222,223
+insertGraphemes insertGraphemes227,228
+replaceCharIM replaceCharIM231,232
+data CommandMode CommandMode245,246
+data CommandMode = CMode CMode245,246
+data CommandMode = CMode [Grapheme] Grapheme [Grapheme] | CEmptyCEmpty245,246
+instance LineState LineState CommandMode248,249
+    beforeCursor beforeCursor249,250
+    afterCursor afterCursor251,252
+instance Result Result CommandMode254,255
+    toResult toResult255,256
+instance Save Save CommandMode258,259
+    save save259,260
+    restore restore260,261
+instance Move Move CommandMode262,263
+    goLeft goLeft263,264
+    goRight goRight266,267
+    moveToStart moveToStart269,270
+    moveToEnd moveToEnd272,273
+deleteChar deleteChar275,276
+replaceChar replaceChar280,281
+pasteGraphemesBefore, pasteGraphemesAfter pasteGraphemesAfter286,287
+pasteGraphemesBefore,pasteGraphemesBefore286,287
+pasteGraphemesAfter pasteGraphemesAfter290,291
+enterCommandMode, enterCommandModeRight enterCommandModeRight296,297
+enterCommandMode,enterCommandMode296,297
+enterCommandModeRight enterCommandModeRight301,302
+insertFromCommandMode, appendFromCommandMode appendFromCommandMode306,307
+insertFromCommandMode,insertFromCommandMode306,307
+appendFromCommandMode appendFromCommandMode311,312
+withCommandMode withCommandMode314,315
+data ArgMode ArgMode321,322
+data ArgMode s = ArgMode ArgMode321,322
+data ArgMode s = ArgMode {arg arg321,322
+data ArgMode s = ArgMode {arg :: Int, argState argState321,322
+instance Functor Functor ArgMode323,324
+    fmap fmap324,325
+instance LineState LineState s => LineState (ArgMode s)326,327
+    beforeCursor beforeCursor327,328
+    afterCursor afterCursor329,330
+instance Result Result s => Result (ArgMode s)331,332
+    toResult toResult332,333
+instance Save Save s => Save (ArgMode s)334,335
+    save save335,336
+    restore restore336,337
+startArg startArg338,339
+addNum addNum341,342
+applyArg applyArg347,348
+repeatN repeatN350,351
+applyCmdArg applyCmdArg354,355
+newtype Message Message358,359
+newtype Message = Message {messageText messageText358,359
+instance LineState LineState Message360,361
+    beforeCursor beforeCursor361,362
+    afterCursor afterCursor362,363
+data Password Password366,367
+data Password = Password Password366,367
+data Password = Password {passwordState passwordState366,367
+                          passwordChar passwordChar367,368
+instance LineState LineState Password369,370
+    beforeCursor beforeCursor370,371
+    afterCursor afterCursor375,376
+instance Result Result Password377,378
+    toResult toResult378,379
+addPasswordChar addPasswordChar380,381
+deletePasswordChar deletePasswordChar383,384
+atStart, atEnd atEnd388,389
+atStart,atStart388,389
+atEnd atEnd392,393
+overChar, beforeChar, afterChar afterChar395,396
+overChar, beforeChar,beforeChar395,396
+overChar,overChar395,396
+beforeChar beforeChar399,400
+afterChar afterChar402,403
+goRightUntil, goLeftUntil goLeftUntil405,406
+goRightUntil,goRightUntil405,406
+goLeftUntil goLeftUntil410,411
+
+./System/Console/Haskeline/Backend/Posix/Encoder.hs,653
+module System.Console.Haskeline.Backend.Posix.Encoder System.Console.Haskeline.Backend.Posix.Encoder13,14
+data ExternalHandle ExternalHandle40,41
+data ExternalHandle = ExternalHandleExternalHandle40,41
+                        { externalMode externalMode41,42
+                        , eH eH42,43
+data ExternalMode ExternalMode45,46
+data ExternalMode = CodingMode CodingMode45,46
+data ExternalMode = CodingMode | OtherModeOtherMode45,46
+externalHandle externalHandle47,48
+withCodingMode withCodingMode52,53
+hSetBinOrEncoding hSetBinOrEncoding65,66
+haskelineEncoding haskelineEncoding69,70
+openInCodingMode openInCodingMode73,74
+
+./System/Console/Haskeline/Backend/DumbTerm.hs,2169
+module System.Console.Haskeline.Backend.DumbTerm System.Console.Haskeline.Backend.DumbTerm5,6
+data Window Window26,27
+data Window = Window Window26,27
+data Window = Window {pos pos26,27
+initWindow initWindow29,30
+data (m(33,34
+     ) => DumbTerm m a = DumbTerm DumbTerm37,38
+     ) => DumbTerm m a = DumbTerm {unDumbTerm unDumbTerm37,38
+instance (T(Total m, Functor m) => Functor (DumbTerm m)47,48
+  fmap fmap48,49
+instance (T(Total m, Monad m) => Applicative (DumbTerm m)50,51
+   pure pure51,52
+   (D(DumbTermf)52,53
+instance (T(Total m, Monad m) => Monad (DumbTerm m)54,55
+   x x55,56
+instance (T(Total m, MonadIO m) => MonadIO (DumbTerm m)59,60
+  liftIO liftIO60,61
+instance (T(Total m, MonadThrow m) => MonadThrow (DumbTerm m)63,64
+  throwM throwM64,65
+instance (T(Total m, MonadCatch m) => MonadCatch (DumbTerm m)66,67
+  catch catch67,68
+instance (T(Total m, MonadMask m) => MonadMask (DumbTerm m)69,70
+  mask mask70,71
+  uninterruptibleMask uninterruptibleMask74,75
+  generalBracket generalBracket78,79
+instance (T(Total m, Monad m) => MonadState Window (DumbTerm m)86,87
+  get get87,88
+  put put88,89
+instance (T(Total m, Monad m) => MonadReader Handles (DumbTerm m)90,91
+  ask ask91,92
+newtype DumbTerm DumbTerm94,95
+newtype DumbTerm m a = DumbTerm {unDumbTerm unDumbTerm94,95
+type DumbTermM DumbTermM100,101
+instance MonadTrans MonadTrans DumbTerm106,107
+    lift lift107,108
+evalDumb evalDumb109,110
+runDumbTerm runDumbTerm116,117
+instance ((Total m, MonadIO m, MonadMask m, MonadReader Layout m) => Term (DumbTerm m)119,120
+    reposition reposition124,125
+    drawLineDiff drawLineDiff125,126
+    printLines printLines127,128
+    moveToNextLine moveToNextLine128,129
+    clearLayout clearLayout129,130
+    ringBell ringBell130,131
+printText printText133,134
+cr,crlf crlf144,145
+cr,cr144,145
+crlf crlf145,146
+cr cr146,147
+backs,spaces spaces148,149
+backs,backs148,149
+spaces spaces150,151
+clearLayoutD clearLayoutD153,154
+maxWidth maxWidth159,160
+drawLineDiff' drawLineDiff'162,163
+refitLine refitLine186,187
+clearDeadText clearDeadText202,203
+
+./System/Console/Haskeline/Backend/Terminfo.hs,3785
+module System.Console.Haskeline.Backend.Terminfo(System.Console.Haskeline.Backend.Terminfo7,8
+data Actions Actions43,44
+data Actions = Actions Actions43,44
+data Actions = Actions {leftA, rightA, upA upA43,44
+                        clearToLineEnd clearToLineEnd44,45
+                        nl, cr cr45,46
+                        bellAudible,bellVisual bellVisual46,47
+                        clearAllA clearAllA47,48
+                        wrapLine wrapLine48,49
+getActions getActions50,51
+getWrapLine getWrapLine75,76
+data TermPos TermPos86,87
+data TermPos = TermPos TermPos86,87
+data TermPos = TermPos {termRow,termCol termCol86,87
+initTermPos initTermPos89,90
+data TermRows TermRows92,93
+data TermRows = TermRows TermRows92,93
+                    rowLengths rowLengths93,94
+                    lastRow lastRow95,96
+initTermRows initTermRows102,103
+setRow setRow105,106
+lookupCells lookupCells109,110
+data (m(114,115
+     ) => Draw m a = Draw Draw122,123
+     ) => Draw m a = Draw {unDraw unDraw122,123
+liftReaderT liftReaderT139,140
+instance ((Total m, Functor m) => Functor (Draw m)143,144
+  fmap fmap148,149
+instance ((Total m, Monad m) => Applicative (Draw m)150,151
+  pure pure155,156
+  (D(Drawf)156,157
+instance ((Total m, Monad m) => Monad (Draw m)158,159
+  return return163,164
+  m m164,165
+instance ((Total m, MonadIO m) => MonadIO (Draw m)169,170
+  liftIO liftIO174,175
+instance ((Total m, MonadThrow m) => MonadThrow (Draw m)176,177
+  throwM throwM181,182
+instance ((Total m, MonadCatch m) => MonadCatch (Draw m)183,184
+  catch catch188,189
+instance ((Total m, MonadMask m) => MonadMask (Draw m)191,192
+  mask mask196,197
+  uninterruptibleMask uninterruptibleMask208,209
+  generalBracket generalBracket220,221
+instance ((Total m, Monad m) => MonadReader Actions (Draw m)228,229
+  ask ask233,234
+instance ((Total m, Monad m) => MonadReader Terminal (Draw m)235,236
+  ask ask240,241
+instance ((Total m, Monad m) => MonadState TermPos (Draw m)242,243
+  get get247,248
+  put put248,249
+instance ((Total m, Monad m) => MonadState TermRows (Draw m)250,251
+  get get255,256
+  put put256,257
+instance ((Total m, Monad m) => MonadReader Handles (Draw m)258,259
+  ask ask263,264
+newtype Draw Draw266,267
+newtype Draw m a = Draw {unDraw unDraw266,267
+instance MonadTrans MonadTrans Draw279,280
+    lift lift280,281
+evalDraw evalDraw282,283
+runTerminfoDraw runTerminfoDraw299,300
+wrapKeypad wrapKeypad312,313
+tinfoLayout tinfoLayout323,324
+terminfoKeys terminfoKeys329,330
+type TermAction TermAction359,360
+type ActionT ActionT361,362
+type ActionM ActionM363,364
+runActionT runActionT369,370
+output output382,383
+outputText outputText387,388
+left,right,up up390,391
+left,right,right390,391
+left,left390,391
+right right392,393
+up up393,394
+clearAll clearAll395,396
+mreplicate mreplicate398,399
+spaces spaces404,405
+changePos changePos410,411
+moveToPos moveToPos416,417
+moveRelative moveRelative422,423
+changeRight, changeLeft changeLeft427,428
+changeRight,changeRight427,428
+changeLeft changeLeft430,431
+advancePos advancePos436,437
+sum' sum'451,452
+printText printText457,458
+drawLineDiffT drawLineDiffT480,481
+getLinesLeft getLinesLeft495,496
+clearDeadText clearDeadText501,502
+clearLayoutT clearLayoutT514,515
+moveToNextLineT moveToNextLineT520,521
+repositionT repositionT527,528
+instance ((Total m, MonadIO m, MonadMask m, MonadReader Layout m) => Term (Draw m)537,538
+    drawLineDiff drawLineDiff542,543
+    reposition reposition543,544
+    printLines printLines545,546
+    clearLayout clearLayout548,549
+    moveToNextLine moveToNextLine549,550
+    ringBell ringBell550,551
+
+./System/Console/Haskeline/Backend/WCWidth.hs,256
+module System.Console.Haskeline.Backend.WCWidth(System.Console.Haskeline.Backend.WCWidth0,1
+wcwidth wcwidth17,18
+gWidth gWidth23,24
+gsWidth gsWidth26,27
+splitAtWidth splitAtWidth31,32
+splitAtWidth' splitAtWidth'36,37
+takeWidth takeWidth47,48
+
+./System/Console/Haskeline/Backend/Win32.hsc,2967
+module System.Console.Haskeline.Backend.Win32(System.Console.Haskeline.Backend.Win322,3
+getNumberOfEvents getNumberOfEvents55,56
+getEvent getEvent61,62
+eventReader eventReader64,65
+combineSurrogatePairs combineSurrogatePairs76,77
+consoleHandles consoleHandles84,85
+processEvent processEvent96,97
+keyFromCode keyFromCode122,123
+data InputEvent InputEvent139,140
+data InputEvent = KeyEvent KeyEvent139,140
+data InputEvent = KeyEvent {keyDown keyDown139,140
+                          repeatCount repeatCount140,141
+                          virtualKeyCode virtualKeyCode141,142
+                          virtualScanCode virtualScanCode142,143
+                          unicodeChar unicodeChar143,144
+                          controlKeyState controlKeyState144,145
+           | WindowEventWindowEvent147,148
+           | OtherEventOtherEvent148,149
+peekEvent peekEvent151,152
+readEvents readEvents160,161
+getKeyEvent getKeyEvent171,172
+data Coord Coord186,187
+data Coord = Coord Coord186,187
+data Coord = Coord {coordX, coordY coordY186,187
+instance Storable Storable Coord189,190
+    sizeOf sizeOf190,191
+    alignment alignment191,192
+    peek peek192,193
+    poke poke196,197
+setPosition setPosition204,205
+getPosition getPosition211,212
+withScreenBufferInfo withScreenBufferInfo215,216
+getBufferSize getBufferSize222,223
+writeConsole writeConsole230,231
+messageBeep messageBeep250,251
+withWindowMode withWindowMode263,264
+data Handles Handles277,278
+data Handles = Handles Handles277,278
+data Handles = Handles { hIn, hOut hOut277,278
+closeHandles closeHandles279,280
+newtype Draw Draw282,283
+newtype Draw m a = Draw {runDraw runDraw282,283
+type DrawM DrawM286,287
+instance MonadTrans MonadTrans Draw288,289
+    lift lift289,290
+getPos getPos291,292
+setPos setPos294,295
+printText printText305,306
+printAfter printAfter310,311
+drawLineDiffWin drawLineDiffWin320,321
+movePosRight, movePosLeft movePosLeft332,333
+movePosRight,movePosRight332,333
+movePosLeft movePosLeft350,351
+crlf crlf367,368
+instance (M(MonadMask m, MonadIO m, MonadReader Layout m) => Term (Draw m)370,371
+    drawLineDiff drawLineDiff371,372
+    reposition reposition377,378
+    printLines printLines379,380
+    clearLayout clearLayout382,383
+    moveToNextLine moveToNextLine384,385
+    ringBell ringBell388,389
+win32TermStdin win32TermStdin391,392
+win32Term win32Term396,397
+win32WithEvent win32WithEvent416,417
+fileRunTerm fileRunTerm421,422
+putOut putOut442,443
+type Handler Handler454,455
+withCtrlCHandler withCtrlCHandler462,463
+unicodeToCodePage unicodeToCodePage487,488
+codePageToUnicode codePageToUnicode500,501
+getCodePage getCodePage510,511
+getMultiByteChar getMultiByteChar520,521
+getAttribute getAttribute537,538
+fillConsoleChar fillConsoleChar541,542
+fillConsoleAttribute fillConsoleAttribute550,551
+clearScreen clearScreen559,560
+
+./System/Console/Haskeline/Backend/Posix.hsc,1436
+module System.Console.Haskeline.Backend.Posix System.Console.Haskeline.Backend.Posix6,7
+data Handles Handles62,63
+data Handles = Handles Handles62,63
+data Handles = Handles {hIn, hOut hOut62,63
+                        , closeHandles closeHandles63,64
+ehIn, ehOut ehOut65,66
+ehIn,ehIn65,66
+ehOut ehOut67,68
+posixLayouts posixLayouts74,75
+ioctlLayout ioctlLayout77,78
+unsafeHandleToFD unsafeHandleToFD87,88
+envLayout envLayout96,97
+tryGetLayouts tryGetLayouts103,104
+getKeySequences getKeySequences115,116
+ansiKeys ansiKeys140,141
+sttyKeys sttyKeys164,165
+newtype TreeMap TreeMap171,172
+emptyTreeMap emptyTreeMap174,175
+insertIntoTree insertIntoTree177,178
+listToTree listToTree189,190
+mapLines mapLines193,194
+lexKeys lexKeys198,199
+lookupChars lookupChars209,210
+withPosixGetEvent withPosixGetEvent221,222
+withWindowHandler withWindowHandler233,234
+withSigIntHandler withSigIntHandler241,242
+withHandler withHandler252,253
+getEvent getEvent261,262
+getBlockOfChars getBlockOfChars270,271
+stdinTTYHandles, ttyHandles ttyHandles283,284
+stdinTTYHandles,stdinTTYHandles283,284
+ttyHandles ttyHandles295,296
+openTerm openTerm306,307
+posixRunTerm posixRunTerm311,312
+posixRunTerm posixRunTerm326,327
+type PosixT PosixT345,346
+runPosixT runPosixT347,348
+fileRunTerm fileRunTerm350,351
+posixFileRunTerm posixFileRunTerm357,358
+wrapTerminalOps wrapTerminalOps380,381
+
+./System/Console/Haskeline/Backend/Win32/Echo.hs,772
+module System.Console.Haskeline.Backend.Win32.Echo System.Console.Haskeline.Backend.Win32.Echo2,3
+hGetInputEchoState hGetInputEchoState34,35
+hGetInputEchoSTTY hGetInputEchoSTTY46,47
+hSetInputEchoState hSetInputEchoState50,51
+hSetInputEchoSTTY hSetInputEchoSTTY60,61
+hBracketInputEcho hBracketInputEcho73,74
+hWithoutInputEcho hWithoutInputEcho82,83
+hSttyRaw hSttyRaw89,90
+data EchoStateEchoState103,104
+  = MinTTY MinTTY104,105
+  | DefaultTTY DefaultTTY114,115
+hEchoOff hEchoOff123,124
+type STTYSettings STTYSettings131,132
+minTTY minTTY134,135
+withHandleToHANDLE withHandleToHANDLE150,151
+withHandleToHANDLENative withHandleToHANDLENative158,159
+withHandleToHANDLEPosix withHandleToHANDLEPosix169,170
+withStablePtr withStablePtr190,191
+
+./System/Console/Haskeline/Completion.hs,1170
+module System.Console.Haskeline.Completion(System.Console.Haskeline.Completion4,5
+type CompletionFunc CompletionFunc40,41
+data Completion Completion43,44
+data Completion = Completion Completion43,44
+data Completion = Completion {replacement replacement43,44
+                        display display44,45
+                        isFinished isFinished47,48
+noCompletion noCompletion54,55
+completeWord completeWord63,64
+completeWord' completeWord'71,72
+completeWordWithPrev completeWordWithPrev82,83
+completeWordWithPrev completeWordWithPrev90,91
+completeWordWithPrev' completeWordWithPrev'93,94
+completeWordWithPrev' completeWordWithPrev'101,102
+simpleCompletion simpleCompletion115,116
+filenameWordBreakChars filenameWordBreakChars120,121
+completeFilename completeFilename124,125
+completion completion133,134
+setReplacement setReplacement136,137
+escapeReplacement escapeReplacement139,140
+completeQuotedWord completeQuotedWord151,152
+addQuotes addQuotes164,165
+splitAtQuote splitAtQuote169,170
+isUnquoted isUnquoted185,186
+listFiles listFiles192,193
+fixPath fixPath216,217
+fallbackCompletion fallbackCompletion226,227
+
+./System/Console/Haskeline/Command.hs,1972
+module System.Console.Haskeline.Command(System.Console.Haskeline.Command4,5
+data Effect Effect44,45
+data Effect = LineChange LineChange44,45
+              | PrintLines PrintLines45,46
+              | ClearScreenClearScreen46,47
+              | RingBellRingBell47,48
+lineChange lineChange49,50
+data KeyMap KeyMap52,53
+data KeyMap a = KeyMap KeyMap52,53
+data KeyMap a = KeyMap {lookupKM lookupKM52,53
+data KeyConsumed KeyConsumed54,55
+data KeyConsumed a = NotConsumed NotConsumed54,55
+data KeyConsumed a = NotConsumed a | Consumed Consumed54,55
+instance Functor Functor KeyMap56,57
+    fmap fmap57,58
+instance Functor Functor KeyConsumed59,60
+    fmap fmap60,61
+data CmdM CmdM64,65
+data CmdM m a   = GetKey GetKey64,65
+                | DoEffect DoEffect65,66
+                | CmdM CmdM66,67
+                | Result Result67,68
+type Command Command69,70
+instance ((Total m, Monad m) => Functor (CmdM m)71,72
+    fmap fmap76,77
+instance ((Total m, Monad m) => Applicative (CmdM m)78,79
+    pure pure83,84
+    (<(<*>)84,85
+instance ((Total m, Monad m) => Monad (CmdM m)86,87
+    return return91,92
+    GetKey GetKey93,94
+    DoEffect DoEffect94,95
+    CmdM CmdM95,96
+    Result Result96,97
+type KeyCommand KeyCommand98,99
+instance MonadTrans MonadTrans CmdM100,101
+    lift lift101,102
+keyCommand keyCommand105,106
+useKey useKey108,109
+useChar useChar112,113
+withoutConsuming withoutConsuming118,119
+choiceCmd choiceCmd121,122
+keyChoiceCmd keyChoiceCmd127,128
+keyChoiceCmdM keyChoiceCmdM134,135
+(>(>|>)138,139
+f f143,144
+(>(>+>)146,147
+km km151,152
+try try155,156
+(+(+>)163,164
+finish finish166,167
+failCmd failCmd173,174
+effect effect180,181
+clearScreenCmd clearScreenCmd183,184
+simpleCommand simpleCommand186,187
+charCommand charCommand198,199
+setState setState206,207
+change change213,214
+changeFromChar changeFromChar220,221
+doBefore doBefore227,228
+
+./System/Console/Haskeline/Backend.hs,272
+module System.Console.Haskeline.Backend System.Console.Haskeline.Backend0,1
+defaultRunTerm defaultRunTerm18,19
+terminalRunTerm terminalRunTerm22,23
+stdinTTY stdinTTY25,26
+directTTY directTTY32,33
+runDraw runDraw41,42
+fileHandleRunTerm fileHandleRunTerm49,50
+
+./System/Console/Haskeline/RunCommand.hs,392
+module System.Console.Haskeline.RunCommand System.Console.Haskeline.RunCommand18,19
+runCommandLoop runCommandLoop34,35
+runCommandLoop' runCommandLoop'51,52
+printPreservingLineChars printPreservingLineChars95,96
+drawReposition drawReposition101,102
+drawEffect drawEffect113,114
+actBell actBell134,135
+applyKeysToMap applyKeysToMap151,152
+applyKeysToCmd applyKeysToCmd163,164
+
+./System/Console/Haskeline/Internal.hs,122
+module System.Console.Haskeline.InternalSystem.Console.Haskeline.Internal0,1
+debugTerminalKeys debugTerminalKeys20,21
+
+./System/Console/Haskeline/Directory.hsc,217
+module System.Console.Haskeline.Directory(System.Console.Haskeline.Directory5,6
+getDirectoryContents getDirectoryContents30,31
+doesDirectoryExist doesDirectoryExist49,50
+getHomeDirectory getHomeDirectory55,56
+
+./System/Console/Haskeline/Command/Undo.hs,535
+module System.Console.Haskeline.Command.Undo System.Console.Haskeline.Command.Undo4,5
+data Undo Undo15,16
+data Undo = Undo Undo15,16
+data Undo = Undo {pastUndo, futureRedo futureRedo15,16
+type UndoT UndoT17,18
+runUndoT runUndoT19,20
+initialUndo initialUndo22,23
+saveToUndo saveToUndo26,27
+undoPast, redoFuture redoFuture36,37
+undoPast,undoPast36,37
+redoFuture redoFuture41,42
+saveForUndo saveForUndo47,48
+commandUndo, commandRedo commandRedo57,58
+commandUndo,commandUndo57,58
+commandRedo commandRedo63,64
+
+./System/Console/Haskeline/Command/History.hs,1761
+module System.Console.Haskeline.Command.History System.Console.Haskeline.Command.History4,5
+data HistLog HistLog20,21
+data HistLog = HistLog HistLog20,21
+data HistLog = HistLog {pastHistory, futureHistory futureHistory20,21
+prevHistoryM prevHistoryM23,24
+prevHistories prevHistories29,30
+histLog histLog33,34
+runHistoryFromFile runHistoryFromFile37,38
+prevHistory, firstHistory firstHistory57,58
+prevHistory,prevHistory57,58
+firstHistory firstHistory62,63
+historyBack, historyForward historyForward67,68
+historyBack,historyBack67,68
+historyForward historyForward73,74
+historyStart, historyEnd historyEnd75,76
+historyStart,historyStart75,76
+historyEnd historyEnd81,82
+histUpdate histUpdate83,84
+reverseHist reverseHist91,92
+data SearchMode SearchMode105,106
+data SearchMode = SearchMode SearchMode105,106
+data SearchMode = SearchMode {searchTerm searchTerm105,106
+                              foundHistory foundHistory106,107
+                              direction direction107,108
+data Direction Direction110,111
+data Direction = Forward Forward110,111
+data Direction = Forward | ReverseReverse110,111
+directionName directionName113,114
+instance LineState LineState SearchMode117,118
+    beforeCursor beforeCursor118,119
+    afterCursor afterCursor122,123
+instance Result Result SearchMode124,125
+    toResult toResult125,126
+saveSM saveSM127,128
+startSearchMode startSearchMode130,131
+addChar addChar133,134
+searchHistories searchHistories137,138
+findInLine findInLine145,146
+prepSearch prepSearch153,154
+searchBackwards searchBackwards159,160
+doSearch doSearch165,166
+searchHistory searchHistory180,181
+searchForPrefix searchForPrefix219,220
+findFirst findFirst238,239
+
+./System/Console/Haskeline/Command/Completion.hs,638
+module System.Console.Haskeline.Command.Completion(System.Console.Haskeline.Command.Completion4,5
+useCompletion useCompletion26,27
+askIMCompletions askIMCompletions31,32
+completionCmd completionCmd46,47
+presentCompletions presentCompletions59,60
+menuCompletion menuCompletion76,77
+makePartialCompletion makePartialCompletion89,90
+pagingCompletion pagingCompletion96,97
+askFirst askFirst114,115
+pageCompletions pageCompletions130,131
+printPage printPage148,149
+makeLines makeLines161,162
+padWords padWords175,176
+splitIntoGroups splitIntoGroups192,193
+ceilDiv ceilDiv200,201
+ceilDiv m n | m `rem`rem201,202
+
+./System/Console/Haskeline/Command/KillRing.hs,728
+module System.Console.Haskeline.Command.KillRing System.Console.Haskeline.Command.KillRing4,5
+data Stack Stack16,17
+data Stack a = Stack Stack16,17
+emptyStack emptyStack19,20
+peek peek22,23
+rotate rotate27,28
+push push32,33
+type KillRing KillRing35,36
+runKillRing runKillRing37,38
+pasteCommand pasteCommand47,48
+deleteFromDiff' deleteFromDiff'61,62
+killFromHelper killFromHelper68,69
+killFromArgHelper killFromArgHelper80,81
+copyFromArgHelper copyFromArgHelper91,92
+data KillHelper KillHelper103,104
+data KillHelper = SimpleMove SimpleMove103,104
+                 | GenericKill GenericKill104,105
+killAll killAll108,109
+applyHelper applyHelper111,112
+applyArgHelper applyArgHelper115,116
+
+./System/Console/Haskeline/InputT.hs,2056
+module System.Console.Haskeline.InputT System.Console.Haskeline.InputT4,5
+data Settings Settings31,32
+data Settings m = Settings Settings31,32
+data Settings m = Settings {complete complete31,32
+                            historyFile historyFile32,33
+                            autoAddHistory autoAddHistory35,36
+setComplete setComplete45,46
+newtypenewtype51,52
+instance (T(Total m, Monad m) => Monad (InputT m)85,86
+  x x86,87
+instance (T(Total m, MonadIO m) => MonadIO (InputT m)89,90
+  liftIO liftIO90,91
+instance (T(Total m, MonadThrow m) => MonadThrow (InputT m)92,93
+  throwM throwM93,94
+instance (T(Total m, MonadCatch m) => MonadCatch (InputT m)95,96
+  catch catch96,97
+instance (M(MonadIO m, Total m, MonadMask m) => MonadMask (InputT m)98,99
+  mask mask99,100
+  uninterruptibleMask uninterruptibleMask112,113
+  generalBracket generalBracket124,125
+instance MonadTrans MonadTrans InputT135,136
+    lift lift136,137
+instance ((Total m, Fail-MonadFail m) => Fail-MonadFail (InputT m)138,139
+    fail fail143,144
+instance ((Total m, MonadFix m) => MonadFix (InputT m)145,146
+    mfix mfix150,151
+withRunInBase withRunInBase157,158
+getHistory getHistory179,180
+putHistory putHistory187,188
+modifyHistory modifyHistory195,196
+type InputCmdT InputCmdT203,204
+runInputCmdT runInputCmdT208,209
+instance ((Total m, MonadIO m, MonadMask m) => CommandMonad (InputCmdT m)218,219
+    runCompletion runCompletion223,224
+runInputTWithPrefs runInputTWithPrefs229,230
+runInputT runInputT245,246
+haveTerminalUI haveTerminalUI253,254
+data Behavior Behavior274,275
+data Behavior = Behavior Behavior274,275
+withBehavior withBehavior278,279
+runInputTBehavior runInputTBehavior290,291
+runInputTBehaviorWithPrefs runInputTBehaviorWithPrefs302,303
+execInputT execInputT312,313
+mapInputT mapInputT325,326
+defaultBehavior defaultBehavior340,341
+useFileHandle useFileHandle344,345
+useFile useFile348,349
+preferTerm preferTerm358,359
+readPrefsFromHome readPrefsFromHome364,365
+
+./System/Console/Haskeline/IO.hs,535
+module System.Console.Haskeline.IO(System.Console.Haskeline.IO33,34
+data Request Request51,52
+data Request = forall forall51,52
+data InputState InputState53,54
+data InputState = HD HD53,54
+data InputState = HD {forkedThread forkedThread53,54
+                        requestVar requestVar54,55
+                        subthreadFinished subthreadFinished55,56
+initializeInput initializeInput59,60
+runHaskeline runHaskeline67,68
+closeInput closeInput79,80
+cancelInput cancelInput84,85
+queryInput queryInput94,95
+
+./System/Console/Haskeline/Vi.hs,2717
+module System.Console.Haskeline.Vi System.Console.Haskeline.Vi7,8
+type EitherMode EitherMode26,27
+type SavedCommand SavedCommand28,29
+data ViState ViState30,31
+data ViState m = ViState ViState30,31
+            lastCommand lastCommand31,32
+            lastSearch lastSearch32,33
+emptyViState emptyViState35,36
+type ViT ViT45,46
+type InputCmd InputCmd47,48
+type InputKeyCmd InputKeyCmd52,53
+viKeyCommands viKeyCommands58,59
+viCommands viCommands67,68
+simpleInsertions simpleInsertions70,71
+insertChars insertChars90,91
+eofIfEmpty eofIfEmpty110,111
+viCommandActions viCommandActions115,116
+exitingCommands exitingCommands128,129
+simpleCmdActions simpleCmdActions141,142
+replaceOnce replaceOnce162,163
+repeatedCommands repeatedCommands165,166
+pureMovements pureMovements177,178
+useMovementsForKill useMovementsForKill202,203
+repeatableCommands repeatableCommands225,226
+repeatableCmdMode repeatableCmdMode237,238
+flipCase flipCase256,257
+repeatableCmdToIMode repeatableCmdToIMode263,264
+deletionCmd deletionCmd266,267
+deletionToInsertCmd deletionToInsertCmd274,275
+yankCommand yankCommand287,288
+reinputArg reinputArg297,298
+goToWordDelEnd, goToBigWordDelEnd goToBigWordDelEnd306,307
+goToWordDelEnd,goToWordDelEnd306,307
+goToBigWordDelEnd goToBigWordDelEnd309,310
+movements movements312,313
+isBigWordChar, isWordChar, isOtherChar isOtherChar346,347
+isBigWordChar, isWordChar,isWordChar346,347
+isBigWordChar,isBigWordChar346,347
+isWordChar isWordChar348,349
+isOtherChar isOtherChar349,350
+(.(.||.)351,352
+(f(f.||.g)352,353
+foreachDigit foreachDigit354,355
+wordErase wordErase371,372
+findMatchingBrace findMatchingBrace377,378
+deleteMatchingBrace deleteMatchingBrace386,387
+scanBraces scanBraces396,397
+matchingRightBrace, matchingLeftBrace matchingLeftBrace406,407
+matchingRightBrace,matchingRightBrace406,407
+matchingLeftBrace matchingLeftBrace408,409
+braceList braceList410,411
+replaceLoop replaceLoop415,416
+storeLastCmd storeLastCmd430,431
+storedAction storedAction439,440
+storedCmdAction storedCmdAction446,447
+storedIAction storedIAction454,455
+killAndStoreCmd killAndStoreCmd462,463
+killAndStoreI killAndStoreI469,470
+killAndStoreIE killAndStoreIE476,477
+noArg noArg483,484
+data SearchEntry SearchEntry489,490
+data SearchEntry = SearchEntry SearchEntry489,490
+                    entryState entryState490,491
+                    searchChar searchChar491,492
+searchText searchText494,495
+instance LineState LineState SearchEntry497,498
+    beforeCursor beforeCursor498,499
+    afterCursor afterCursor500,501
+viEnterSearch viEnterSearch502,503
+viSearchHist viSearchHist521,522
+
+./System/Console/Haskeline/Key.hs,1778
+module System.Console.Haskeline.Key(System.Console.Haskeline.Key0,1
+data Key Key19,20
+data Key = Key Key19,20
+instance Show Show Key22,23
+    show show23,24
+data Modifier Modifier27,28
+data Modifier = Modifier Modifier27,28
+data Modifier = Modifier {hasControl, hasMeta, hasShift hasShift27,28
+instance Show Show Modifier30,31
+    show show31,32
+noModifier noModifier39,40
+data BaseKey BaseKey44,45
+data BaseKey = KeyChar KeyChar44,45
+             | FunKey FunKey45,46
+             | LeftKey LeftKey46,47
+             | LeftKey | RightKey RightKey46,47
+             | LeftKey | RightKey | DownKey DownKey46,47
+             | LeftKey | RightKey | DownKey | UpKeyUpKey46,47
+             | KillLine KillLine47,48
+             | KillLine | Home Home47,48
+             | KillLine | Home | End End47,48
+             | KillLine | Home | End | PageDown PageDown47,48
+             | KillLine | Home | End | PageDown | PageUpPageUp47,48
+             | Backspace Backspace48,49
+             | Backspace | DeleteDelete48,49
+             | SearchReverse SearchReverse49,50
+             | SearchReverse | SearchForwardSearchForward49,50
+instance Show Show BaseKey52,53
+    show show53,54
+simpleKey simpleKey77,78
+metaKey metaKey80,81
+ctrlKey ctrlKey83,84
+simpleChar, metaChar, ctrlChar ctrlChar86,87
+simpleChar, metaChar,metaChar86,87
+simpleChar,simpleChar86,87
+metaChar metaChar88,89
+ctrlChar ctrlChar90,91
+setControlBits setControlBits92,93
+ctrlBits ctrlBits96,97
+specialKeys specialKeys99,100
+parseModifiers parseModifiers120,121
+parseModifier parseModifier124,125
+breakAtDashes breakAtDashes132,133
+parseKey parseKey138,139
+parseBaseKey parseBaseKey145,146
+canonicalizeKey canonicalizeKey158,159
+
+./System/Console/Haskeline/Term.hs,2494
+module System.Console.Haskeline.Term System.Console.Haskeline.Term5,6
+  MonadReader Layout m, MonadIO m, MonadMask m) => Term Term39,40
+    reposition reposition40,41
+    moveToNextLine moveToNextLine41,42
+    printLines printLines42,43
+    drawLineDiff drawLineDiff43,44
+    clearLayout clearLayout44,45
+    ringBell ringBell45,46
+drawLine, clearLine clearLine47,48
+drawLine,drawLine47,48
+clearLine clearLine50,51
+data RunTerm RunTerm52,53
+data RunTerm = RunTerm RunTerm52,53
+            putStrOut putStrOut54,55
+            termOps termOps55,56
+            wrapInterrupt wrapInterrupt56,57
+            closeTerm closeTerm61,62
+data TermOps TermOps65,66
+data TermOps = TermOpsTermOps65,66
+    { getLayout getLayout66,67
+    , withGetEvent withGetEvent67,68
+    , evalTerm evalTerm72,73
+    , saveUnusedKeys saveUnusedKeys77,78
+    , externalPrint externalPrint78,79
+flushEventQueue flushEventQueue85,86
+data FileOps FileOps101,102
+data FileOps = FileOps FileOps101,102
+            withoutInputEcho withoutInputEcho102,103
+            wrapFileInput wrapFileInput108,109
+            getLocaleLine getLocaleLine109,110
+            getLocaleChar getLocaleChar110,111
+            maybeReadNewline maybeReadNewline111,112
+isTerminalStyle isTerminalStyle115,116
+data EvalTerm EvalTerm122,123
+    = forall forall123,124
+mapEvalTerm mapEvalTerm128,129
+data Interrupt Interrupt138,139
+data Interrupt = InterruptInterrupt138,139
+instance Exception Exception Interrupt141,142
+        => CommandMonad CommandMonad150,151
+    runCompletion runCompletion151,152
+instance {-# OVERLAPPABLE #-} ((Total m, Total (t m), MonadTrans t, CommandMonad m, MonadReader Prefs (t m), MonadIO (t m), MonadMask (t m), MonadReader Layout (t m)) => CommandMonad (t m)153,154
+    runCompletion runCompletion161,162
+matchInit matchInit164,165
+data EventEvent168,169
+  = WindowResizeWindowResize169,170
+  | KeyInput KeyInput170,171
+  | ErrorEvent ErrorEvent171,172
+  | ExternalPrint ExternalPrint172,173
+keyEventLoop keyEventLoop175,176
+saveKeys saveKeys196,197
+data Layout Layout199,200
+data Layout = Layout Layout199,200
+data Layout = Layout {width, height height199,200
+hWithBinaryMode hWithBinaryMode206,207
+bracketSet bracketSet217,218
+hGetByte hGetByte227,228
+guardedEOF guardedEOF230,231
+hMaybeReadNewline hMaybeReadNewline247,248
+returnOnEOF returnOnEOF254,255
+hGetLocaleLine hGetLocaleLine260,261
+
+./examples/Test.hs,68
+module Main Main0,1
+mySettings mySettings16,17
+main main19,20
+
+./examples/export/HaskelineExport.hs,186
+module HaskelineExport HaskelineExport0,1
+initialize_input initialize_input20,21
+close_input close_input25,26
+cancel_input cancel_input30,31
+get_input_line get_input_line36,37
