@@ -39,7 +39,7 @@ import Control.Monad.Trans.Class
 import System.Console.Haskeline.LineState
 import System.Console.Haskeline.Key
 #if MIN_VERSION_base(4,16,0)
-import GHC.Types (Total, type(@))
+import GHC.Types (type(@))
 #endif
 
 data Effect = LineChange (Prefix -> LineChars)
